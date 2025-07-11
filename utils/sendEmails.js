@@ -1,4 +1,4 @@
-import sendEmail from '../lib/sendEmail.js';
+import sendEmail from '../lib/nodemailer.js';
 
 export const sendResetEmail = async (email, resetToken) => {
   const resetUrl = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
@@ -17,7 +17,6 @@ export const sendResetEmail = async (email, resetToken) => {
 
 export const sendVerificationEmail = async (email, token) => {
   const verifyUrl = `${process.env.CLIENT_URL}/verify-email/${token}`;
-
   const html = `
     <h2>Verify Your Email</h2>
     <p>Click the link below to verify your account:</p>

@@ -7,7 +7,8 @@ import {
   logout,
   refreshToken,
   verifyEmail,
-  resendVerificationEmail
+  resendVerificationEmail,
+  getFullProfile
 } from '../controllers/authController.js';
 
 import {
@@ -15,6 +16,7 @@ import {
   forgotPasswordLimiter,
   resendVerificationLimiter,
 } from '../middleware/rateLimiters.js';
+import { protectRoute } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -77,7 +79,7 @@ router.post('/signup', signup);
  *       401:
  *         description: Invalid credentials
  */
-router.post('/login', loginLimiter, login);
+router.post('/login', login);
 
 /**
  * @swagger
@@ -202,5 +204,6 @@ router.get('/verify-email/:token', verifyEmail);
  *         description: Already verified or user not found
  */
 router.post('/resend-verification', resendVerificationLimiter, resendVerificationEmail);
+router.get("/profile", protectRoute, getFullProfile)
 
 export default router;

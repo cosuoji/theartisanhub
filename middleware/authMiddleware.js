@@ -12,7 +12,7 @@ export const protectRoute = async (req, res, next) => {
 
     let decoded;
     try {
-      decoded = jwt.verify(accessToken, process.env.ACCESS_TOKEN_SECRET);
+      decoded = jwt.verify(accessToken, process.env.JWT_SECRET);
     } catch (error) {
       if (error.name === "TokenExpiredError") {
         return res.status(401).json({ message: "Access token expired" });
@@ -50,7 +50,7 @@ export const adminRoute = (req, res, next) => {
 };
 
 export const emailVerified = (req, res, next) => {
-  if (req.user?.isVerified) {
+  if (req.user?.isEmailVerified) {
     return next();
   }
   return res.status(403).json({

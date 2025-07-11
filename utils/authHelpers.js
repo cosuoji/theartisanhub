@@ -5,11 +5,11 @@ import { v4 as uuidv4 } from 'uuid';
 export const generateTokens = (userId) => {
   const jti = uuidv4();
 
-  const accessToken = jwt.sign({ userId, jti }, process.env.ACCESS_TOKEN_SECRET, {
+  const accessToken = jwt.sign({ userId, jti }, process.env.JWT_SECRET, {
     expiresIn: '1h',
   });
 
-  const refreshToken = jwt.sign({ userId, jti }, process.env.REFRESH_TOKEN_SECRET, {
+  const refreshToken = jwt.sign({ userId, jti }, process.env.JWT_SECRET, {
     expiresIn: '30d',
   });
 
@@ -31,10 +31,6 @@ export const setCookies = (res, accessToken, refreshToken, rememberMe = false) =
     sameSite: 'None',
     path: '/',
   };
-
-  if (process.env.COOKIE_DOMAIN) {
-    cookieOptions.domain = process.env.COOKIE_DOMAIN;
-  }
 
   res.cookie('accessToken', accessToken, {
     ...cookieOptions,

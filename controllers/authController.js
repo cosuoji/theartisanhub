@@ -12,12 +12,15 @@ import crypto from 'crypto';
 
 
 export const signup = async (req, res) => {
-    const { password } = req.body;
-    const email = req.body.email.toLowerCase();
-
-    try {
+    
+     try {
       // 1) Validate input
+
+      const { password, name, role } = req.body;
+      const email = req.body.email.toLowerCase();
+     
       const { isValid, errors } = validateSignupInput({ email, password });
+      
       if (!isValid) {
         return res.status(400).json({ message: errors.join(' ') });
       }
@@ -27,14 +30,18 @@ export const signup = async (req, res) => {
       if (userExists) {
         return res.status(400).json({ message: "User already exists" });
       }
-  
-      // 3) Create user
-      const user = await User.create({ email, password });
-  
+
+    
+     
+      const user = await User.create({ email, password, role, name });
+      
+      
       // 4) Generate tokens
-      const { accessToken, refreshToken: newRefreshToken } = generateTokens(decoded.userId);
-      await storeRefreshToken(user._id, refreshToken);
-      setCookies(res, accessToken, refreshToken);
+    
+        const { accessToken, refreshToken: newRefreshToken } = generateTokens(user._id);
+        await storeRefreshToken(user._id, newRefreshToken);
+        setCookies(res, accessToken, newRefreshToken);
+ 
   
       // 5) Generate & store email verification token
       const { rawToken, hashedToken, expires } = generateHashedToken();
@@ -44,12 +51,15 @@ export const signup = async (req, res) => {
   
       // 6) Send verification email
       await sendVerificationEmail(user.email, rawToken);
+      
   
       // 7) Respond
       res.status(201).json({
-        _id: user._id,
-        email: user.email,
-        role: user.role,
+        user: {
+          _id: user._id,
+          email: user.email,
+          role: user.role,
+        },
         message: 'Account created. Please verify your email.'
       });
   
@@ -64,18 +74,19 @@ export const login = asyncHandler(async (req, res) => {
 	  const { password } = req.body;
     const email = req.body.email.toLowerCase();
 
+    console.log(email,password)
     const rememberMe = req.body.rememberMe || false;
 
-	  
+	
 	  // 1. Validate input
 	  if (!email || !password) {
 		return res.status(400).json({ message: "Email and password are required" });
 	  }
   
 	  // 2. Find user
-	  const user = await User.findOne({ email }).select('+password').populate('cart wishlist');;
+	  const user = await User.findOne({ email }).select('+password')
 	  if (!user) {
-		return res.status(401).json({ message: "Invalid credentials" });
+		return res.status(401).json({ message: "User not found" });
 	  }
   
 	  // 3. Verify password
@@ -97,13 +108,15 @@ export const login = asyncHandler(async (req, res) => {
 	  
 	  // 6. Set cookies
     setCookies(res, accessToken, refreshToken, rememberMe);
-  
+
 	  // 7. Return user data (without password)
 	  res.json({
-		_id: user._id,
-		email: user.email,
-		role: user.role,
-	  });
+      user: {
+        _id: user._id,
+        email: user.email,
+        role: user.role,
+      },
+    });
   
 	} catch (error) {
 	  console.error("Login error:", error);
@@ -117,12 +130,12 @@ export const logout = asyncHandler(async (req, res) => {
 		const refreshToken = req.cookies.refreshToken;
 
     if (accessToken) {
-			const decoded = jwt.verify(accessToken, process.env.ACCESS_TOKEN_SECRET);
+			const decoded = jwt.verify(accessToken, process.env.JWT_SECRET);
 			await redis.set(`bl_access:${decoded.jti}`, true, 'EX', 60 * 60); // 1 hour
 		}
     
 		if (refreshToken) {
-			const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+			const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET);
 			await redis.del(`refresh_token:${decoded.userId}`);
 		}
 
@@ -150,6 +163,7 @@ try {
 }
   });
   
+
   export const forgotPassword = async (req, res) => {
     const { email } = req.body;
   
@@ -164,6 +178,7 @@ try {
     await user.save();
   
     await sendResetEmail(user.email, rawToken);
+    
   
     res.status(200).json({ message: "If that email exists, a reset link has been sent." });
   };
@@ -181,13 +196,14 @@ try {
     });
   
     if (!user) {
-      return res.status(400).json({ message: "Reset link is invalid or has expired." });
+      return res.status(400).json({ message: 'Token invalid or expired' });
     }
   
     user.password = password; // hashed in pre-save
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
     await user.save();
+
   
     res.json({ message: "Password has been reset successfully." });
   };
@@ -206,7 +222,7 @@ try {
       return res.status(400).json({ message: 'Verification link is invalid or has expired.' });
     }
   
-    user.isVerified = true;
+    user.isEmailVerified = true;
     user.verificationToken = undefined;
     user.verificationTokenExpires = undefined;
     await user.save();
@@ -224,7 +240,7 @@ try {
         return res.status(400).json({ message: 'No account found with that email.' });
       }
   
-      if (user.isVerified) {
+      if (user.isEmailVerified) {
         return res.status(400).json({ message: 'This account is already verified.' });
       }
   
@@ -247,39 +263,43 @@ try {
 
   export const refreshToken = asyncHandler(async (req, res) => {
     try {
-      const refreshToken = req.cookies.refreshToken;
-      if (!refreshToken) throw new Error("No refresh token");
-    
-      const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+      const oldRefreshToken = req.cookies.refreshToken;
+      if (!oldRefreshToken) throw new Error("No refresh token");
+  
+      // 1. Verify token
+      const decoded = jwt.verify(oldRefreshToken, process.env.JWT_SECRET);
+  
+      // 2. Check Redis store
       const storedToken = await redis.get(`refresh_token:${decoded.userId}`);
-    
-      if (storedToken !== refreshToken) {
-      throw new Error("Invalid refresh token");
+      if (storedToken !== oldRefreshToken) {
+        throw new Error("Invalid refresh token");
       }
-    
-      // Generate new tokens
-      const { accessToken, newRefreshToken } = generateTokens(decoded.userId);
-      
-      // Update Redis storage (with new TTL)
+  
+      // 3. Generate new tokens
+      const { accessToken, refreshToken: newRefreshToken } = generateTokens(decoded.userId);
+  
+      // 4. Store new refresh token in Redis
       await redis.set(
-      `refresh_token:${decoded.userId}`,
-      newRefreshToken,
-      "EX", 
-      30 * 24 * 60 * 60 // 30 days
+        `refresh_token:${decoded.userId}`,
+        newRefreshToken,
+        "EX",
+        30 * 24 * 60 * 60
       );
-    
-      // Set new cookies
+  
+      // 5. Set new cookies
       setCookies(res, accessToken, newRefreshToken);
-    
-      res.json({ 
-      accessToken, 
-      refreshToken: newRefreshToken 
+  
+      // 6. Respond
+      res.json({
+        accessToken,
+        refreshToken: newRefreshToken
       });
+  
     } catch (error) {
-      // Clear invalid tokens
+      // Clear cookies to force logout on client
       res.clearCookie("accessToken");
       res.clearCookie("refreshToken");
-      res.status(401).json({ message: error.message });
+      res.status(401).json({ message: error.message || "Unauthorized" });
     }
-    });
+  });
   

@@ -92,12 +92,11 @@ Your API is fully documented with Swagger.
 - **AccessToken Cookie**: Sent via browser (httpOnly)
 - All protected routes require login.
 
-```yaml
-components:
-  securitySchemes:
-    cookieAuth:
-      type: apiKey
-      in: cookie
-      name: accessToken
-
-
+## 🏗 Folder Structure
+.
+├── controllers/
+├── middleware/
+├── models/
+├── routes/
+├── utils/
+└── swagger.js

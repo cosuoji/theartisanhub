@@ -1,0 +1,1531 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Artisan Directory API",
+    "version": "1.0.0",
+    "description": "API documentation for your Artisan directory project"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5000",
+      "description": "Development server"
+    },
+    {
+      "url": "https://your-production-url.com",
+      "description": "Production server"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "cookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "accessToken"
+      }
+    }
+  },
+  "security": [
+    {
+      "cookieAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Auth",
+      "description": "Authentication and verification"
+    },
+    {
+      "name": "Users",
+      "description": "User profile management"
+    },
+    {
+      "name": "Artisans",
+      "description": "Public artisan directory"
+    },
+    {
+      "name": "Admin",
+      "description": "Admin dashboard and controls"
+    },
+    {
+      "name": "Jobs",
+      "description": "Job booking & workflow"
+    },
+    {
+      "name": "Reviews",
+      "description": "Reviewing artisans"
+    },
+    {
+      "name": "Categories",
+      "description": "Artisan skill categories"
+    },
+    {
+      "name": "Locations",
+      "description": "Artisan locations by city"
+    },
+    {
+      "name": "Uploads",
+      "description": "File uploads (e.g. avatar)"
+    }
+  ],
+  "paths": {
+    "/admin/artisans/{id}/approve": {
+      "patch": {
+        "summary": "Approve an artisan profile",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "description": "ID of the artisan to approve",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Artisan approved successfully"
+          },
+          "404": {
+            "description": "Artisan not found"
+          }
+        }
+      }
+    },
+    "/admin/users": {
+      "get": {
+        "summary": "Get all users (paginated)",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Page number"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Number of results per page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of users"
+          }
+        }
+      }
+    },
+    "/admin/users/{id}": {
+      "delete": {
+        "summary": "Delete a user (soft or hard)",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "hard",
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Set to true for hard delete"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User deleted"
+          },
+          "404": {
+            "description": "User not found"
+          }
+        }
+      }
+    },
+    "/admin/users/{id}/ban": {
+      "patch": {
+        "summary": "Ban or unban a user",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "description": "ID of the user to ban/unban",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "isBanned": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User ban status updated"
+          }
+        }
+      }
+    },
+    "/admin/analytics": {
+      "get": {
+        "summary": "Get dashboard analytics",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Admin analytics"
+          }
+        }
+      }
+    },
+    "/artisans": {
+      "get": {
+        "summary": "Get list of public artisan profiles",
+        "tags": [
+          "Artisans"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "skill",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by skill"
+          },
+          {
+            "in": "query",
+            "name": "location",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by location"
+          },
+          {
+            "in": "query",
+            "name": "category",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by category"
+          },
+          {
+            "in": "query",
+            "name": "available",
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Filter by availability"
+          },
+          {
+            "in": "query",
+            "name": "minRating",
+            "schema": {
+              "type": "number"
+            },
+            "description": "Minimum average rating"
+          },
+          {
+            "in": "query",
+            "name": "sortBy",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "rating",
+                "createdAt",
+                "experience"
+              ]
+            },
+            "description": "Sort by field"
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Fuzzy search on name, bio, skills"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of artisans"
+          }
+        }
+      }
+    },
+    "/artisans/{id}": {
+      "get": {
+        "summary": "Get a single artisan's public profile",
+        "tags": [
+          "Artisans"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Artisan ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Artisan profile"
+          },
+          "404": {
+            "description": "Artisan not found"
+          }
+        }
+      }
+    },
+    "/artisans/nearby": {
+      "get": {
+        "summary": "Get artisans near a given location",
+        "tags": [
+          "Artisans"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "lat",
+            "schema": {
+              "type": "number"
+            },
+            "required": true,
+            "description": "Latitude"
+          },
+          {
+            "in": "query",
+            "name": "lng",
+            "schema": {
+              "type": "number"
+            },
+            "required": true,
+            "description": "Longitude"
+          },
+          {
+            "in": "query",
+            "name": "radius",
+            "schema": {
+              "type": "number",
+              "default": 10
+            },
+            "description": "Radius in kilometers"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of nearby artisans"
+          }
+        }
+      }
+    },
+    "/artisans/me/profile": {
+      "put": {
+        "summary": "Update artisan profile (authenticated artisan)",
+        "tags": [
+          "Artisans"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "bio": {
+                    "type": "string"
+                  },
+                  "category": {
+                    "type": "string"
+                  },
+                  "skills": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "yearsOfExperience": {
+                    "type": "number"
+                  },
+                  "location": {
+                    "type": "string"
+                  },
+                  "available": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated artisan profile"
+          },
+          "403": {
+            "description": "Only artisans can update their profile"
+          }
+        }
+      }
+    },
+    "/artisans/me/toggle-availability": {
+      "patch": {
+        "summary": "Toggle artisan availability (authenticated)",
+        "tags": [
+          "Artisans"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Availability status updated"
+          },
+          "403": {
+            "description": "Only artisans can toggle availability"
+          }
+        }
+      }
+    },
+    "/auth/signup": {
+      "post": {
+        "summary": "Register a new user",
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email",
+                  "password"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string"
+                  },
+                  "password": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "User created and verification email sent"
+          },
+          "400": {
+            "description": "Validation error"
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "summary": "Log in a user",
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email",
+                  "password"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string"
+                  },
+                  "password": {
+                    "type": "string"
+                  },
+                  "rememberMe": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login successful"
+          },
+          "401": {
+            "description": "Invalid credentials"
+          }
+        }
+      }
+    },
+    "/auth/forgot-password": {
+      "post": {
+        "summary": "Request a password reset email",
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Reset email sent (even if user does not exist)"
+          }
+        }
+      }
+    },
+    "/auth/reset-password/{token}": {
+      "post": {
+        "summary": "Reset a user’s password",
+        "tags": [
+          "Auth"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "Reset password token"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "password"
+                ],
+                "properties": {
+                  "password": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Password reset successfully"
+          },
+          "400": {
+            "description": "Invalid or expired token"
+          }
+        }
+      }
+    },
+    "/auth/refresh-token": {
+      "post": {
+        "summary": "Refresh access token",
+        "tags": [
+          "Auth"
+        ],
+        "responses": {
+          "200": {
+            "description": "Token refreshed"
+          },
+          "401": {
+            "description": "Invalid refresh token"
+          }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "summary": "Log out a user",
+        "tags": [
+          "Auth"
+        ],
+        "responses": {
+          "200": {
+            "description": "Logout successful"
+          }
+        }
+      }
+    },
+    "/auth/verify-email/{token}": {
+      "get": {
+        "summary": "Verify user email",
+        "tags": [
+          "Auth"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "Email verification token"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Email verified"
+          },
+          "400": {
+            "description": "Invalid or expired token"
+          }
+        }
+      }
+    },
+    "/auth/resend-verification": {
+      "post": {
+        "summary": "Resend email verification link",
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Verification email resent"
+          },
+          "400": {
+            "description": "Already verified or user not found"
+          }
+        }
+      }
+    },
+    "/categories": {
+      "get": {
+        "summary": "Get all artisan categories",
+        "tags": [
+          "Categories"
+        ],
+        "responses": {
+          "200": {
+            "description": "List of categories",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "_id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "slug": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new category (admin only)",
+        "tags": [
+          "Categories"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "example": "Electrician"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Category created"
+          },
+          "400": {
+            "description": "Missing or invalid input"
+          },
+          "403": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/jobs": {
+      "post": {
+        "summary": "Create a new job request",
+        "tags": [
+          "Jobs"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "artisanId",
+                  "description"
+                ],
+                "properties": {
+                  "artisanId": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string",
+                    "example": "Fix leaking kitchen sink"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Job created"
+          },
+          "404": {
+            "description": "Artisan not found"
+          }
+        }
+      },
+      "get": {
+        "summary": "Get all jobs created by the logged-in user",
+        "tags": [
+          "Jobs"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of jobs"
+          }
+        }
+      }
+    },
+    "/jobs/{id}": {
+      "get": {
+        "summary": "Get details of a single job by ID",
+        "tags": [
+          "Jobs"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "Job ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Job details"
+          },
+          "404": {
+            "description": "Job not found"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Cancel a job request",
+        "tags": [
+          "Jobs"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "Job ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Job cancelled"
+          },
+          "404": {
+            "description": "Job not found"
+          }
+        }
+      }
+    },
+    "/jobs/{id}/status": {
+      "patch": {
+        "summary": "Artisan updates job status (e.g., accepted, in-progress)",
+        "tags": [
+          "Jobs"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "pending",
+                      "accepted",
+                      "in-progress",
+                      "completed"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Job status updated"
+          },
+          "403": {
+            "description": "Not authorized"
+          },
+          "404": {
+            "description": "Job not found"
+          }
+        }
+      }
+    },
+    "/jobs/{jobId}/complete": {
+      "patch": {
+        "summary": "Artisan marks job as completed",
+        "tags": [
+          "Jobs"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "jobId",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "Job ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Job marked as completed"
+          },
+          "403": {
+            "description": "Not authorized"
+          },
+          "404": {
+            "description": "Job not found"
+          }
+        }
+      }
+    },
+    "/jobs/admin/all": {
+      "get": {
+        "summary": "Admin view of all jobs in the system",
+        "tags": [
+          "Jobs"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of all jobs"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        }
+      }
+    },
+    "/locations": {
+      "get": {
+        "summary": "Get all distinct artisan locations",
+        "tags": [
+          "Locations"
+        ],
+        "responses": {
+          "200": {
+            "description": "Array of unique city/location strings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "example": "Lagos"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reviews/artisan/{artisanId}": {
+      "get": {
+        "summary": "Get reviews for a specific artisan",
+        "tags": [
+          "Reviews"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "artisanId",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "Artisan ID to fetch reviews for"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Array of reviews",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Review"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reviews": {
+      "post": {
+        "summary": "Leave a review for an artisan",
+        "tags": [
+          "Reviews"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "artisanId",
+                  "rating"
+                ],
+                "properties": {
+                  "artisanId": {
+                    "type": "string",
+                    "example": "64ab1234de4567..."
+                  },
+                  "rating": {
+                    "type": "number",
+                    "example": 5
+                  },
+                  "comment": {
+                    "type": "string",
+                    "example": "Very professional!"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Review created"
+          },
+          "400": {
+            "description": "Validation or duplicate review error"
+          }
+        }
+      }
+    },
+    "/reviews/{id}": {
+      "delete": {
+        "summary": "Delete your own review",
+        "tags": [
+          "Reviews"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Review ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Review deleted"
+          },
+          "403": {
+            "description": "Not authorized"
+          }
+        }
+      }
+    },
+    "/reviews/{id}/admin": {
+      "delete": {
+        "summary": "Admin deletes any review",
+        "tags": [
+          "Reviews"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Review ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Review deleted by admin"
+          },
+          "403": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/uploads/avatar": {
+      "post": {
+        "summary": "Upload user avatar",
+        "tags": [
+          "Uploads"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "avatar": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Avatar uploaded successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "url": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No file uploaded or invalid file"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/uploads/artisan-images": {
+      "post": {
+        "summary": "Upload multiple artisan work images",
+        "tags": [
+          "Uploads"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "images": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "binary"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Images uploaded successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "urls": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No files uploaded"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/users/me": {
+      "get": {
+        "summary": "Get your own user profile",
+        "tags": [
+          "Users"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns the authenticated user's profile"
+          },
+          "401": {
+            "description": "Unauthorized or token missing"
+          },
+          "403": {
+            "description": "Email not verified"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update your user profile",
+        "tags": [
+          "Users"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "phone": {
+                    "type": "string"
+                  },
+                  "avatar": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Profile updated successfully"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Email not verified"
+          }
+        }
+      }
+    },
+    "/users/{id}": {
+      "get": {
+        "summary": "Get a public user profile by ID",
+        "tags": [
+          "Users"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "User ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User profile found"
+          },
+          "404": {
+            "description": "User not found"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Admin - Delete a user by ID",
+        "tags": [
+          "Users"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "User ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User deleted"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Admin access required"
+          },
+          "404": {
+            "description": "User not found"
+          }
+        }
+      }
+    },
+    "/users": {
+      "get": {
+        "summary": "Admin - Get all users (paginated)",
+        "tags": [
+          "Users"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Page number"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Results per page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of users"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Admin access required"
+          }
+        }
+      }
+    },
+    "/users/{id}/role": {
+      "put": {
+        "summary": "Admin - Change a user's role",
+        "tags": [
+          "Users"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "User ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "role": {
+                    "type": "string",
+                    "enum": [
+                      "user",
+                      "artisan",
+                      "admin"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Role updated successfully"
+          },
+          "400": {
+            "description": "Invalid role"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Admin access required"
+          },
+          "404": {
+            "description": "User not found"
+          }
+        }
+      }
+    }
+  }
+}

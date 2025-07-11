@@ -1,45 +1,71 @@
 import User from '../models/User.js';
 import asyncHandler from 'express-async-handler';
 import { geocodeLocation } from '../utils/geocode.js';
-import Review from '../models/Review.js';
+import Location from "../models/Location.js"
+
 
 // Get public list of artisans
+
 export const getArtisanDirectory = asyncHandler(async (req, res) => {
-    const { skill, location, category, page = 1, limit = 20 } = req.query;
-    const filter = { role: 'artisan' };
+  const { skill, location, category, page = 1, limit = 20, sortBy, minRating, available } = req.query;
+  const filter = { role: 'artisan' };
 
-    if (req.query.available) {
-        filter['artisanProfile.available'] = req.query.available === 'true';
-      }
-      
-      if (req.query.minRating) {
-        filter['rating'] = { $gte: Number(req.query.minRating) };
-      }
-  
-    if (location) filter['artisanProfile.location'] = new RegExp(location, 'i');
-    if (category) filter['artisanProfile.category'] = new RegExp(category, 'i');
-    if (skill) filter['artisanProfile.skills'] = { $in: [new RegExp(skill, 'i')] };
-  
-    const skip = (page - 1) * limit;
+  // ✅ Boolean filter
+  if (available !== undefined) {
+    filter['artisanProfile.available'] = available === 'true';
+  }
 
+  // ✅ Minimum average rating
+  if (minRating) {
+    filter.rating = { $gte: Number(minRating) };
+  }
 
-  
-    const [artisans, total] = await Promise.all([
-      User.find(filter)
-        .select('email avatar artisanProfile')
-        .skip(skip)
-        .limit(parseInt(limit)),
-      User.countDocuments(filter),
-    ]);
-  
-    res.json({
-      artisans,
-      total,
-      page: parseInt(page),
-      totalPages: Math.ceil(total / limit),
-      reviews,
-    });
+  // ✅ Skill (fuzzy match)
+  if (skill) {
+    filter['artisanProfile.skills'] = { $in: [new RegExp(skill, 'i')] };
+  }
+
+  // ✅ Category (fuzzy match)
+  if (category) {
+    filter['artisanProfile.category'] = new RegExp(category, 'i');
+  }
+
+  // ✅ Location (use Location._id)
+  if (location) {
+    const locDoc = await Location.findOne({ name: new RegExp(`^${location}$`, 'i') });
+    if (locDoc) {
+      filter['artisanProfile.location'] = locDoc._id;
+    } else {
+      return res.status(400).json({ message: 'Invalid location specified' });
+    }
+  }
+
+  // ✅ Pagination
+  const skip = (page - 1) * limit;
+
+  // ✅ Sorting
+  let sortOption = {};
+  if (sortBy === 'rating') sortOption.rating = -1;
+  else if (sortBy === 'experience') sortOption['artisanProfile.yearsOfExperience'] = -1;
+  else sortOption.createdAt = -1; // default: newest
+
+  const [artisans, total] = await Promise.all([
+    User.find(filter)
+      .select('email avatar artisanProfile rating')
+      .populate('artisanProfile.location', 'name') // 🔍 populate location name
+      .skip(skip)
+      .limit(parseInt(limit))
+      .sort(sortOption),
+    User.countDocuments(filter),
+  ]);
+
+  res.json({
+    artisans,
+    total,
+    page: parseInt(page),
+    totalPages: Math.ceil(total / limit),
   });
+});
   
 // Get single artisan public profile
 export const getArtisanById = asyncHandler(async (req, res) => {
@@ -48,7 +74,7 @@ export const getArtisanById = asyncHandler(async (req, res) => {
   res.json(artisan);
 });
 
-// Update own artisan profile
+
 export const updateArtisanProfile = asyncHandler(async (req, res) => {
   const updates = req.body;
   const user = await User.findById(req.user._id);
@@ -65,7 +91,7 @@ export const updateArtisanProfile = asyncHandler(async (req, res) => {
     }
   });
 
-  // ✅ Validate phone
+  // ✅ Validate phone number
   if (updates.phone && !/^0\d{10}$/.test(updates.phone)) {
     return res.status(400).json({ message: 'Phone number must be 11 digits and start with 0' });
   }
@@ -73,43 +99,40 @@ export const updateArtisanProfile = asyncHandler(async (req, res) => {
   // ✅ Create artisanProfile if not present
   if (!user.artisanProfile) user.artisanProfile = {};
 
-  // ✅ Update artisanProfile fields
-  const profileFields = [
-    'bio',
-    'category',
-    'skills',
-    'yearsOfExperience',
-    'location',
-    'available',
-  ];
+  // ✅ Validate skill count
+  if (updates.skills && updates.skills.length > 5) {
+    return res.status(400).json({ message: 'You can only list up to 5 skills.' });
+  }
 
+  // ✅ Update fields except location
+  const profileFields = ['bio', 'category', 'skills', 'yearsOfExperience', 'available'];
   profileFields.forEach((field) => {
     if (updates[field] !== undefined) {
       user.artisanProfile[field] = updates[field];
     }
   });
 
-  // ✅ Validate skill count
-  if (updates.skills && updates.skills.length > 5) {
-    return res.status(400).json({ message: 'You can only list up to 5 skills.' });
-  }
-
-  // ✅ Geocode if location was updated
+  // ✅ Handle location update via Location model
   if (updates.location) {
     try {
-      const coords = await geocodeLocation(updates.location);
-      if (coords) {
+      const locDoc = await Location.findOne({ name: new RegExp(`^${updates.location}$`, 'i') });
+
+      if (!locDoc) {
+        return res.status(400).json({ message: 'Invalid location. Please select a valid city.' });
+      }
+
+      user.artisanProfile.location = locDoc._id;
+
+      // Optional: update coordinates
+      if (locDoc.coordinates?.coordinates?.length === 2) {
         user.artisanProfile.coordinates = {
           type: 'Point',
-          coordinates: coords,
+          coordinates: locDoc.coordinates.coordinates,
         };
-      } else {
-        console.warn('Geocoding failed: No coordinates returned for location');
       }
     } catch (err) {
-      console.error('Error during geocoding:', err.message);
-      // Optional: return an error or just warn
-      // return res.status(500).json({ message: 'Error geocoding location' });
+      console.error('Error processing location:', err.message);
+      return res.status(500).json({ message: 'Failed to update location' });
     }
   }
 
