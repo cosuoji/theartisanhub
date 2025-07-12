@@ -1,5 +1,5 @@
 import express from 'express';
-import { uploadAvatar, uploadArtisanImages } from '../controllers/uploadController.js';
+import { uploadAvatar, uploadArtisanImages, removeArtisanImage } from '../controllers/uploadController.js';
 import { protectRoute, artisanOnly } from '../middleware/authMiddleware.js';
 import { upload } from '../middleware/upload.js';
 
@@ -90,6 +90,56 @@ router.post(
   artisanOnly,
   upload.array('images', 5),
   uploadArtisanImages
+);
+
+/**
+ * @swagger
+ * /artisan-images:
+ *   delete:
+ *     summary: Remove an uploaded image from an artisan's portfolio
+ *     description: Deletes an image from ImageKit and removes it from the artisan's profile.
+ *     tags:
+ *       - Artisan
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - imageUrl
+ *             properties:
+ *               imageUrl:
+ *                 type: string
+ *                 description: Full URL of the image to remove
+ *                 example: https://ik.imagekit.io/your_app/artisan-work/sample.jpg
+ *     responses:
+ *       200:
+ *         description: Image removed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Image removed successfully
+ *       400:
+ *         description: Image URL not provided
+ *       401:
+ *         description: Unauthorized or unauthenticated
+ *       404:
+ *         description: Image not found in profile or user not found
+ */
+
+
+router.delete(
+  '/artisan-images',
+  protectRoute,
+  artisanOnly,
+  removeArtisanImage
 );
 
 export default router;

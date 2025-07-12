@@ -8,7 +8,8 @@ import {
   refreshToken,
   verifyEmail,
   resendVerificationEmail,
-  getFullProfile
+  getFullProfile,
+  changePassword
 } from '../controllers/authController.js';
 
 import {
@@ -204,6 +205,82 @@ router.get('/verify-email/:token', verifyEmail);
  *         description: Already verified or user not found
  */
 router.post('/resend-verification', resendVerificationLimiter, resendVerificationEmail);
+
+/**
+ * @swagger
+ * /auth/profile:
+ *   get:
+ *     summary: Get full profile of the authenticated user
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Authenticated user's profile information
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 _id:
+ *                   type: string
+ *                   example: 64e4d6c5f04caa1fbd67c2d1
+ *                 email:
+ *                   type: string
+ *                   example: johndoe@example.com
+ *                 role:
+ *                   type: string
+ *                   example: user
+ *                 isVerified:
+ *                   type: boolean
+ *                   example: true
+ *                 name:
+ *                   type: string
+ *                   example: John Doe
+ *                 phone:
+ *                   type: string
+ *                   example: "+2348123456789"
+ *                 address:
+ *                   type: string
+ *                   example: "12 Artisan Avenue, Lagos"
+ *       401:
+ *         description: Unauthorized (missing or invalid token)
+ *       500:
+ *         description: Internal server error
+ */
+
 router.get("/profile", protectRoute, getFullProfile)
+
+/**
+ * @swagger
+ * /auth/change-password:
+ *   post:
+ *     summary: Change user password and log out
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               currentPassword:
+ *                 type: string
+ *                 example: OldPassword123!
+ *               newPassword:
+ *                 type: string
+ *                 example: NewPassword456#
+ *     responses:
+ *       200:
+ *         description: Password changed successfully
+ *       401:
+ *         description: Invalid current password or not authenticated
+ *       500:
+ *         description: Server error
+ */
+
+router.patch('/change-password', protectRoute, changePassword);
 
 export default router;

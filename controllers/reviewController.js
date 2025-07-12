@@ -139,3 +139,27 @@ export const adminDeleteReview = asyncHandler(async (req, res) => {
 
   res.json({ message: 'Review deleted by admin' });
 });
+
+// controllers/reviewController.js
+// controllers/reviewController.js
+export const getMyReviews = asyncHandler(async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const skip = (page - 1) * limit;
+
+  const [reviews, total] = await Promise.all([
+    Review.find({ user: req.user._id })
+      .populate('artisan', 'name _id')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit),
+    Review.countDocuments({ user: req.user._id }),
+  ]);
+
+  res.json({
+    reviews,
+    total,
+    page,
+    totalPages: Math.ceil(total / limit),
+  });
+});

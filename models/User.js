@@ -19,7 +19,6 @@ const userSchema = new mongoose.Schema({
   resetPasswordExpires: Date,
   role: { type: String, enum: ['user', 'artisan', 'admin'], default: 'user' },
   isEmailVerified: { type: Boolean, default: false },
-  isVerified: { type: Boolean, default: false },
   isBanned: { type: Boolean, default: false },
   isDeleted: { type: Boolean, default: false },
 }, { timestamps: true });

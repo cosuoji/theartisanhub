@@ -73,8 +73,6 @@ export const login = asyncHandler(async (req, res) => {
 	try {
 	  const { password } = req.body;
     const email = req.body.email.toLowerCase();
-
-    console.log(email,password)
     const rememberMe = req.body.rememberMe || false;
 
 	
@@ -301,5 +299,33 @@ try {
       res.clearCookie("refreshToken");
       res.status(401).json({ message: error.message || "Unauthorized" });
     }
+  });
+  
+  // controllers/authController.js
+  export const changePassword = asyncHandler(async (req, res) => {
+    const userId = req.user._id;
+    const { currentPassword, newPassword } = req.body;
+  
+    const user = await User.findById(userId).select('+password');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+  
+    const isMatch = await user.comparePassword(currentPassword);
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Current password is incorrect' });
+    }
+  
+    user.password = newPassword;
+    await user.save();
+  
+    // ❌ Invalidate refresh token
+    await redis.del(`refresh_token:${userId}`);
+  
+    // ❌ Clear cookies
+    res.clearCookie('accessToken');
+    res.clearCookie('refreshToken');
+  
+    return res.status(200).json({ message: 'Password changed. Please log in again.' });
   });
   

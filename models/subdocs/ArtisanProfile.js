@@ -18,13 +18,17 @@ const artisanProfileSchema = new mongoose.Schema({
       default: 'Point',
     },
     coordinates: {
-      type: [Number], // [lng, lat]
+      type: [Number],
       default: [0, 0],
     },
   },
 
   available: { type: Boolean, default: true },
   isApproved: { type: Boolean, default: false },
+
+  // ✅ New field
+  portfolioImages: [{ type: String }], // store URLs here
 }, { _id: false });
+
 
 export default artisanProfileSchema;

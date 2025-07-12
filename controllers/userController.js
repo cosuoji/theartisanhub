@@ -82,3 +82,17 @@ export const toggleBanUser = asyncHandler(async (req, res) => {
 
   res.json({ message: `User has been ${isBanned ? 'banned' : 'unbanned'}` });
 });
+
+// controllers/userController.js
+export const updateUserProfile = asyncHandler(async (req, res) => {
+  const { phone, address } = req.body;
+
+  const user = await User.findById(req.user._id);
+  if (!user) return res.status(404).json({ message: 'User not found' });
+
+  user.phone = phone || user.phone;
+  user.address = address || user.address;
+
+  await user.save();
+  res.json({ message: 'Profile updated', user });
+});
