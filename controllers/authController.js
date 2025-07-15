@@ -14,62 +14,59 @@ import Review from "../models/Review.js";
 
 
 export const signup = async (req, res) => {
-    
-     try {
-      // 1) Validate input
+  try {
+    const { password, name, role } = req.body;
+    const email = req.body.email.toLowerCase();
 
-      const { password, name, role } = req.body;
-      const email = req.body.email.toLowerCase();
-     
-      const { isValid, errors } = validateSignupInput({ email, password });
-      
-      if (!isValid) {
-        return res.status(400).json({ message: errors.join(' ') });
-      }
-  
-      // 2) Check if user exists
-      const userExists = await User.findOne({ email });
-      if (userExists) {
-        return res.status(400).json({ message: "User already exists" });
-      }
-
-    
-     
-      const user = await User.create({ email, password, role, name });
-      
-      
-      // 4) Generate tokens
-    
-        const { accessToken, refreshToken: newRefreshToken } = generateTokens(user._id);
-        await storeRefreshToken(user._id, newRefreshToken);
-        setCookies(res, accessToken, newRefreshToken);
- 
-  
-      // 5) Generate & store email verification token
-      const { rawToken, hashedToken, expires } = generateHashedToken();
-      user.verificationToken = hashedToken;
-      user.verificationTokenExpires = expires;
-      await user.save();
-  
-      // 6) Send verification email
-      await sendVerificationEmail(user.email, rawToken);
-      
-  
-      // 7) Respond
-      res.status(201).json({
-        user: {
-          _id: user._id,
-          email: user.email,
-          role: user.role,
-        },
-        message: 'Account created. Please verify your email.'
-      });
-  
-    } catch (error) {
-      console.error("Error in signup:", error.message);
-      res.status(500).json({ message: error.message });
+    // 1) Validate input
+    const { isValid, errors } = validateSignupInput({ email, password });
+    if (!isValid) {
+      return res.status(400).json({ message: errors.join(' ') });
     }
-  };
+
+    // 2) Check if user already exists
+    const userExists = await User.findOne({ email });
+    if (userExists) {
+      return res.status(400).json({ message: 'User already exists' });
+    }
+
+    // 3) Create the user
+    const user = await User.create({ email, password, role, name });
+
+    // 4) Generate tokens
+    const { accessToken, refreshToken } = generateTokens(user._id);
+    await storeRefreshToken(user._id, refreshToken);
+    setCookies(res, accessToken, refreshToken);
+
+    // 5) Email verification token
+    const { rawToken, hashedToken, expires } = generateHashedToken();
+    user.verificationToken = hashedToken;
+    user.verificationTokenExpires = expires;
+    await user.save();
+
+    // 6) Attempt to send verification email (but don’t crash if it fails)
+    try {
+      await sendVerificationEmail(user.email, rawToken);
+    } catch (emailErr) {
+      console.error('Email send failed:', emailErr.message);
+      // Optionally log/report email errors somewhere
+    }
+
+    // 7) Respond
+    res.status(201).json({
+      user: {
+        _id: user._id,
+        email: user.email,
+        role: user.role,
+      },
+      message: 'Account created. Please check your email for verification.',
+    });
+  } catch (error) {
+    console.error('Error in signup:', error.message);
+    res.status(500).json({ message: 'Something went wrong during signup.' });
+  }
+};
+
 
 export const login = asyncHandler(async (req, res) => {
 	try {

@@ -1,6 +1,7 @@
 import User from '../models/User.js';
 import asyncHandler from 'express-async-handler';
 import Location from "../models/Location.js"
+import geocodeNewAddress from '../utils/geocoder.js';
 
 
 // Get public list of artisans
@@ -110,6 +111,21 @@ export const updateArtisanProfile = asyncHandler(async (req, res) => {
       user.artisanProfile[field] = updates[field];
     }
   });
+
+  
+// ✅ If a new address is provided, try geocoding it
+if (updates.address) {
+  try {
+    const geo = await geocodeNewAddress(updates.address);
+    user.artisanProfile.coordinates = {
+      type: 'Point',
+      coordinates: [geo.lng, geo.lat],
+    };
+  } catch (err) {
+    console.error('Geocoding failed:', err.message);
+    // Optional: fallback to leaving coordinates unchanged
+  }
+}
 
   // ✅ Handle location update via Location model
   if (updates.location) {

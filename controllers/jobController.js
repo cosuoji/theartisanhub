@@ -4,17 +4,21 @@ import asyncHandler from 'express-async-handler';
 import User from '../models/User.js';
 
 export const createJob = asyncHandler(async (req, res) => {
-  const { artisanId, description, title } = req.body;
+  const { artisanId, description} = req.body;
 
   const artisan = await User.findById(artisanId);
   if (!artisan || artisan.role !== 'artisan') {
     return res.status(404).json({ message: 'Artisan not found' });
   }
 
+  // ❌ Prevent self-booking
+  if (req.user._id.toString() === artisanId.toString()) {
+    return res.status(403).json({ message: "You can't book yourself." });
+  }
+
   const job = await Job.create({
     user: req.user._id,
     artisan: artisanId,
-    title,
     description,
     status: 'pending',
   });
@@ -36,6 +40,21 @@ export const getUserJobs = asyncHandler(async (req, res) => {
 
   res.json({ jobs, total });
 });
+
+export const getArtisanJobs = asyncHandler(async (req, res) => {
+  const page = Number(req.query.page) || 1;
+  const limit = Number(req.query.limit) || 10;
+  const skip = (page - 1) * limit;
+
+  const total = await Job.countDocuments({ artisan: req.user._id });
+  const jobs = await Job.find({ artisan: req.user._id })
+    .populate('artisan', 'name _id') // Important for linking
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit);
+  res.json({ jobs, total });
+});
+
 
 export const markJobCompleted = asyncHandler(async (req, res) => {
   const job = await Job.findById(req.params.jobId);

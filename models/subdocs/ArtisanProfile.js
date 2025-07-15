@@ -9,7 +9,7 @@ const artisanProfileSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Location',
   },
-  address:{ type: String },
+  address:{ type: String,  maxlength: 255},
 
   coordinates: {
     type: {

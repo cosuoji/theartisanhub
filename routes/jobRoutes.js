@@ -7,7 +7,8 @@ import {
   cancelJob,
   markJobCompleted,
   getAllJobs,
-  checkCanReview
+  checkCanReview,
+  getArtisanJobs
 } from '../controllers/jobController.js';
 
 import {
@@ -69,6 +70,8 @@ router.post('/', protectRoute, createJob);
  *         description: List of jobs
  */
 router.get('/', protectRoute, getUserJobs);
+
+router.get('/artisan', protectRoute, getArtisanJobs);
 
 /**
  * @swagger
