@@ -81,7 +81,7 @@ export const getArtisanReviews = asyncHandler(async (req, res) => {
   const [reviews, total] = await Promise.all([
     Review.find({ artisan: artisanId })
       .populate('user', 'name avatar')
-      .sort('-createdAt')
+      .sort({createdAt: -1})
       .skip(skip)
       .limit(limit),
     Review.countDocuments({ artisan: artisanId }),

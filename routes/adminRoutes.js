@@ -6,6 +6,7 @@ import {
   deleteUser,
   getAdminAnalytics,
   getAllUsers,
+  restoreDeletedUser,
 } from '../controllers/adminController.js';
 
 const router = express.Router();
@@ -42,25 +43,47 @@ router.patch(
  * @swagger
  * /admin/users:
  *   get:
- *     summary: Get all users (paginated)
+ *     summary: Get paginated list of users with optional filters and sorting
  *     tags: [Admin]
  *     security:
- *       - cookieAuth: []
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: page
  *         schema:
  *           type: integer
- *         description: Page number
+ *         default: 1
  *       - in: query
  *         name: limit
  *         schema:
  *           type: integer
- *         description: Number of results per page
+ *         default: 20
+ *       - in: query
+ *         name: role
+ *         schema:
+ *           type: string
+ *           enum: [user, artisan, admin]
+ *       - in: query
+ *         name: isBanned
+ *         schema:
+ *           type: boolean
+ *       - in: query
+ *         name: sortBy
+ *         schema:
+ *           type: string
+ *           enum: [name, email, role, status]
+ *       - in: query
+ *         name: sortOrder
+ *         schema:
+ *           type: string
+ *           enum: [asc, desc]
  *     responses:
  *       200:
  *         description: List of users
+ *       401:
+ *         description: Unauthorized
  */
+
 router.get('/users', protectRoute, adminRoute, getAllUsers);
 
 /**
@@ -133,5 +156,34 @@ router.patch('/users/:id/ban', protectRoute, adminRoute, banUser);
  *         description: Admin analytics
  */
 router.get('/analytics', protectRoute, adminRoute, getAdminAnalytics);
+
+/**
+ * @swagger
+ * /admin/users/{id}/restore:
+ *   patch:
+ *     summary: Restore a soft-deleted user
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: User ID
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: User restored successfully
+ *       400:
+ *         description: User is not deleted
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: User not found
+ */
+
+router.patch('/users/:id/restore', protectRoute, adminRoute, restoreDeletedUser);
+
 
 export default router;

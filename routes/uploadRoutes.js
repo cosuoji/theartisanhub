@@ -2,6 +2,8 @@ import express from 'express';
 import { uploadAvatar, uploadArtisanImages, removeArtisanImage } from '../controllers/uploadController.js';
 import { protectRoute, artisanOnly } from '../middleware/authMiddleware.js';
 import { upload } from '../middleware/upload.js';
+import multer from 'multer';
+
 
 const router = express.Router();
 
@@ -45,7 +47,7 @@ const router = express.Router();
  *       401:
  *         description: Unauthorized
  */
-router.post('/avatar', protectRoute, upload.single('avatar'), uploadAvatar);
+router.post('/avatar', protectRoute, upload.single('file'), uploadAvatar);
 
 /**
  * @swagger

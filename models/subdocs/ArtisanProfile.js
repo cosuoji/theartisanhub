@@ -2,7 +2,6 @@ import mongoose from 'mongoose';
 
 const artisanProfileSchema = new mongoose.Schema({
   bio: { type: String },
-  category: { type: String },
   skills: [{ type: String }],
   yearsOfExperience: { type: Number },
 
@@ -10,6 +9,7 @@ const artisanProfileSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Location',
   },
+  address:{ type: String },
 
   coordinates: {
     type: {
@@ -23,7 +23,7 @@ const artisanProfileSchema = new mongoose.Schema({
     },
   },
 
-  available: { type: Boolean, default: true },
+  available: { type: Boolean, default: false },
   isApproved: { type: Boolean, default: false },
 
   // ✅ New field

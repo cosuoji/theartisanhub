@@ -1,6 +1,5 @@
 import User from '../models/User.js';
 import asyncHandler from 'express-async-handler';
-import { geocodeLocation } from '../utils/geocode.js';
 import Location from "../models/Location.js"
 
 
@@ -51,7 +50,7 @@ export const getArtisanDirectory = asyncHandler(async (req, res) => {
 
   const [artisans, total] = await Promise.all([
     User.find(filter)
-      .select('email avatar artisanProfile rating')
+      .select('email avatar artisanProfile rating name')
       .populate('artisanProfile.location', 'name') // 🔍 populate location name
       .skip(skip)
       .limit(parseInt(limit))
@@ -69,7 +68,7 @@ export const getArtisanDirectory = asyncHandler(async (req, res) => {
   
 // Get single artisan public profile
 export const getArtisanById = asyncHandler(async (req, res) => {
-  const artisan = await User.findOne({ _id: req.params.id, role: 'artisan' }).select('-password');
+  const artisan = await User.findOne({ _id: req.params.id, role: 'artisan' }).select('-password').populate('artisanProfile.location', 'name');
   if (!artisan) return res.status(404).json({ message: 'Artisan not found' });
   res.json(artisan);
 });
@@ -105,7 +104,7 @@ export const updateArtisanProfile = asyncHandler(async (req, res) => {
   }
 
   // ✅ Update fields except location
-  const profileFields = ['bio', 'category', 'skills', 'yearsOfExperience', 'available'];
+  const profileFields = ['bio', 'skills', 'yearsOfExperience', 'available', 'address'];
   profileFields.forEach((field) => {
     if (updates[field] !== undefined) {
       user.artisanProfile[field] = updates[field];
@@ -141,7 +140,7 @@ export const updateArtisanProfile = asyncHandler(async (req, res) => {
 });
 
 export const getNearbyArtisans = asyncHandler(async (req, res) => {
-  const { lat, lng, radius = 10 } = req.query;
+  const { lat, lng, radius = 2} = req.query;
 
   if (!lat || !lng) {
     return res.status(400).json({ message: 'Latitude and longitude are required.' });
@@ -155,7 +154,7 @@ export const getNearbyArtisans = asyncHandler(async (req, res) => {
         $maxDistance: radius * 1000, // in meters
       },
     },
-  }).select('email avatar artisanProfile');
+  }).select('email avatar artisanProfile rating name')
 
   res.json({ total: artisans.length, artisans });
 });

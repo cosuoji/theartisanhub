@@ -98,10 +98,10 @@ export const cancelJob = asyncHandler(async (req, res) => {
   const job = await Job.findById(req.params.id);
   if (!job) return res.status(404).json({ message: 'Job not found' });
 
-  if (job.user.toString() !== req.user._id.toString()) {
-    return res.status(403).json({ message: 'Only the job owner can cancel it' });
+  if (job.user.toString() !== req.user._id.toString() && req.user.role !== "admin") {
+    return res.status(403).json({ message: 'Only the job owner or admin can cancel it' });
   }
-
+  
   if (job.status !== 'pending') {
     return res.status(400).json({ message: 'Only pending jobs can be cancelled' });
   }
@@ -114,14 +114,22 @@ export const cancelJob = asyncHandler(async (req, res) => {
 
 // 🔐 Admin-only: GET /admin/jobs
 export const getAllJobs = asyncHandler(async (req, res) => {
-  const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 20;
+  const { page = 1, limit = 10, status, startDate, endDate } = req.query;
   const skip = (page - 1) * limit;
+
+  const filter = {};
+if (status) filter.status = status;
+if (startDate && endDate) {
+  filter.createdAt = {
+    $gte: new Date(startDate),
+    $lte: new Date(endDate),
+  };
+}
 
   const [jobs, total] = await Promise.all([
     Job.find()
-      .populate('user', 'email')
-      .populate('artisan', 'email')
+      .populate('user', 'email', "name")
+      .populate('artisan', 'email', "name")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit),
@@ -134,4 +142,23 @@ export const getAllJobs = asyncHandler(async (req, res) => {
     page,
     totalPages: Math.ceil(total / limit),
   });
+});
+
+// GET /jobs/can-review/:artisanId
+export const checkCanReview = asyncHandler(async (req, res) => {
+  const { artisanId } = req.params;
+  const userId = req.user._id;
+
+  // ❌ Prevent self-check
+  if (userId.toString() === artisanId.toString()) {
+    return res.status(403).json({ canReview: false });
+  }
+
+  const job = await Job.findOne({
+    user: userId,
+    artisan: artisanId,
+    status: 'completed',
+  });
+
+  res.json({ canReview: !!job });
 });

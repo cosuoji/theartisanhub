@@ -26,7 +26,6 @@ const locationSchema = new mongoose.Schema({
     default: true,
   },
   helpfulVotes: { type: Number, default: 0 },
-reviewImages: [String],
 }, { timestamps: true });
 
 locationSchema.index({ coordinates: '2dsphere' });

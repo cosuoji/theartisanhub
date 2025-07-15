@@ -12,6 +12,7 @@ import {
   emailVerified,
   artisanOnly
 } from '../middleware/authMiddleware.js';
+import { getArtisanStats } from '../controllers/authController.js';
 
 const router = express.Router();
 
@@ -180,5 +181,49 @@ router.patch(
   artisanOnly,
   toggleAvailability
 );
+
+/**
+ /artisans/me/stats:
+  get:
+    tags:
+      - Artisan
+    summary: Get artisan performance stats
+    description: Returns performance stats for the authenticated artisan such as total jobs completed, average rating, and review count.
+    security:
+      - bearerAuth: []
+    responses:
+      '200':
+        description: Stats retrieved successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                totalJobs:
+                  type: integer
+                  example: 7
+                averageRating:
+                  type: number
+                  format: float
+                  example: 4.5
+                reviewCount:
+                  type: integer
+                  example: 13
+                available:
+                  type: boolean
+                  example: true
+      '401':
+        $ref: '#/components/responses/UnauthorizedError'
+      '403':
+        description: Forbidden - Only artisans can access this route
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error'
+      '500':
+        $ref: '#/components/responses/ServerError'
+
+ */
+router.get('/me/stats', protectRoute, emailVerified, artisanOnly, getArtisanStats);
 
 export default router;

@@ -7,6 +7,7 @@ import {
   cancelJob,
   markJobCompleted,
   getAllJobs,
+  checkCanReview
 } from '../controllers/jobController.js';
 
 import {
@@ -189,5 +190,9 @@ router.patch('/:jobId/complete', protectRoute, artisanOnly, markJobCompleted);
  *         description: Forbidden
  */
 router.get('/admin/all', protectRoute, adminRoute, getAllJobs);
+
+// routes/jobRoutes.js
+router.get('/can-review/:artisanId', protectRoute, checkCanReview);
+
 
 export default router;

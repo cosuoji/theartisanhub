@@ -19,6 +19,7 @@ import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './config/swagger.js';
 import reviewRoutes from './routes/reviewRoutes.js';
 import jobRoutes from './routes/jobRoutes.js';
+import adminRoutes from "./routes/adminRoutes.js"
 
 
 
@@ -67,6 +68,7 @@ app.use('/api/locations', locationRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/jobs', jobRoutes);
 app.use('/api/reviews', reviewRoutes);
+app.use('/api/admin', adminRoutes);
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 

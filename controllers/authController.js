@@ -7,6 +7,8 @@ import { sendResetEmail, sendVerificationEmail } from "../utils/sendEmails.js";
 import { generateHashedToken } from "../utils/token.js";
 import asyncHandler from "express-async-handler";
 import crypto from 'crypto';
+import Job from "../models/Job.js";
+import Review from "../models/Review.js";
 
 
 
@@ -329,3 +331,27 @@ try {
     return res.status(200).json({ message: 'Password changed. Please log in again.' });
   });
   
+
+
+  // controller
+export const getArtisanStats = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+
+  const [jobCount, reviews, user] = await Promise.all([
+    Job.countDocuments({ artisan: userId, status: 'completed' }),
+    Review.find({ artisan: userId }),
+    User.findById(userId).select('artisanProfile.available'),
+  ]);
+
+  const avgRating = reviews.length
+    ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
+    : 0;
+
+  res.json({
+    totalJobs: jobCount,
+    averageRating: avgRating,
+    reviewCount: reviews.length,
+    available: user.artisanProfile.available,
+  });
+});
+

@@ -1,6 +1,7 @@
 // controllers/uploadController.js
 import asyncHandler from 'express-async-handler';
 import { imagekit } from '../utils/imagekit.js';
+import User from '../models/User.js';
 
 export const uploadAvatar = asyncHandler(async (req, res) => {
   if (!req.file) {
@@ -24,10 +25,10 @@ export const uploadArtisanImages = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: 'No files uploaded' });
   }
 
-  const existing = user.artisanProfile.portfolioImages || [];
-  if (existing.length + urls.length > 10) {
-    return res.status(400).json({ message: 'Maximum 10 images allowed' });
-  }
+
+  // ✅ Save URLs to the artisan profile
+  const user = await User.findById(req.user._id);
+  if (!user) return res.status(404).json({ message: 'User not found' });
 
   const uploads = await Promise.all(
     req.files.map((file) =>
@@ -41,9 +42,10 @@ export const uploadArtisanImages = asyncHandler(async (req, res) => {
 
   const urls = uploads.map((img) => img.url);
 
-  // ✅ Save URLs to the artisan profile
-  const user = await User.findById(req.user._id);
-  if (!user) return res.status(404).json({ message: 'User not found' });
+  const existing = user.artisanProfile.portfolioImages || [];
+  if (existing.length + urls.length > 10) {
+    return res.status(400).json({ message: 'Maximum 10 images allowed' });
+  }
 
   user.artisanProfile.portfolioImages = [
     ...(user.artisanProfile.portfolioImages || []),
@@ -63,7 +65,7 @@ export const removeArtisanImage = asyncHandler(async (req, res) => {
   }
 
   const user = await User.findById(req.user._id);
-  if (!user) {
+  if (!user || !user.artisanProfile) {
     return res.status(404).json({ message: 'User not found' });
   }
 

@@ -13,33 +13,54 @@ export const approveArtisanProfile = asyncHandler(async (req, res) => {
       artisan.artisanProfile = {};
     }
   
-    artisan.artisanProfile.isVerified = true;
+    artisan.artisanProfile.isApproved = true;
     await artisan.save();
   
     res.json({ message: 'Artisan approved and verified', artisan });
   });
 
-  export const getAllUsers = asyncHandler(async (req, res) => {
-    const { page = 1, limit = 20, role, isBanned } = req.query;
-    const skip = (page - 1) * limit;
-  
-    const filter = {};
-  
-    if (role) filter.role = role;
-    if (isBanned !== undefined) filter.isBanned = isBanned === 'true';
-  
-    const [users, total] = await Promise.all([
-      User.find(filter).skip(skip).limit(Number(limit)).select('-password'),
-      User.countDocuments(filter),
-    ]);
-  
-    res.json({
-      users,
-      total,
-      page: Number(page),
-      totalPages: Math.ceil(total / limit),
-    });
-  }); 
+// controllers/adminController.js
+
+export const getAllUsers = asyncHandler(async (req, res) => {
+  const {
+    page = 1,
+    limit = 20,
+    role,
+    isBanned,
+    sortBy = 'name',
+    sortOrder = 'asc',
+  } = req.query;
+
+  const skip = (page - 1) * limit;
+  const filter = {};
+
+  if (role) filter.role = role;
+  if (isBanned !== undefined) filter.isBanned = isBanned === 'true';
+
+  const sortOptions = {};
+  const validSortFields = ['name', 'email', 'role', 'status'];
+
+  if (validSortFields.includes(sortBy)) {
+    const sortField = sortBy === 'status' ? 'isBanned' : sortBy;
+    sortOptions[sortField] = sortOrder === 'desc' ? -1 : 1;
+  }
+
+  const [users, total] = await Promise.all([
+    User.find(filter)
+      .select('-password')
+      .sort(sortOptions)
+      .skip(Number(skip))
+      .limit(Number(limit)),
+    User.countDocuments(filter),
+  ]);
+
+  res.json({
+    users,
+    total,
+    page: Number(page),
+    totalPages: Math.ceil(total / limit),
+  });
+});
 
   export const banUser = asyncHandler(async (req, res) => {
     const user = await User.findById(req.params.id);
@@ -78,13 +99,13 @@ export const approveArtisanProfile = asyncHandler(async (req, res) => {
       totalUsers,
       totalArtisans,
       bannedUsers,
-      verifiedArtisans,
+      approvedArtisans,
       softDeletedUsers,
     ] = await Promise.all([
       User.countDocuments({}),
       User.countDocuments({ role: 'artisan' }),
       User.countDocuments({ isBanned: true }),
-      User.countDocuments({ role: 'artisan', 'artisanProfile.isVerified': true }),
+      User.countDocuments({ role: 'artisan', 'artisanProfile.isApproved': true }),
       User.countDocuments({ isDeleted: true }),
     ]);
   
@@ -92,9 +113,24 @@ export const approveArtisanProfile = asyncHandler(async (req, res) => {
       totalUsers,
       totalArtisans,
       bannedUsers,
-      verifiedArtisans,
+      approvedArtisans,
       softDeletedUsers,
     });
   });
    
-  
+  // controllers/adminController.js
+export const restoreDeletedUser = asyncHandler(async (req, res) => {
+  const userId = req.params.id;
+
+  const user = await User.findById(userId);
+  if (!user) return res.status(404).json({ message: 'User not found' });
+
+  if (!user.isDeleted) {
+    return res.status(400).json({ message: 'User is not deleted' });
+  }
+
+  user.isDeleted = false;
+  await user.save();
+
+  res.json({ message: 'User restored successfully', userId });
+});
