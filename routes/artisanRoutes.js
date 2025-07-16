@@ -64,6 +64,7 @@ const router = express.Router();
  *         description: A list of artisans
  */
 router.get('/', getArtisanDirectory);
+router.get('/nearby', getNearbyArtisans);
 
 /**
  * @swagger
@@ -84,7 +85,7 @@ router.get('/', getArtisanDirectory);
  *       404:
  *         description: Artisan not found
  */
-router.get('/:id', getArtisanById);
+
 
 /**
  * @swagger
@@ -115,7 +116,7 @@ router.get('/:id', getArtisanById);
  *       200:
  *         description: List of nearby artisans
  */
-router.get('/nearby', getNearbyArtisans);
+
 
 /**
  * @swagger
@@ -225,5 +226,6 @@ router.patch(
 
  */
 router.get('/me/stats', protectRoute, emailVerified, artisanOnly, getArtisanStats);
+router.get('/:id', getArtisanById);
 
 export default router;

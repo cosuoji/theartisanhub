@@ -25,6 +25,7 @@ const artisanProfileSchema = new mongoose.Schema({
 
   available: { type: Boolean, default: false },
   isApproved: { type: Boolean, default: false },
+  rating: {type: Number, default: 0},
 
   // ✅ New field
   portfolioImages: [{ type: String }], // store URLs here

@@ -1,4 +1,5 @@
 import fetch from 'node-fetch';
+import axios from 'axios';
 
 const OPENCAGE_API_KEY = process.env.OPENCAGE_API_KEY;
 

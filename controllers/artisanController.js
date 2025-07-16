@@ -7,10 +7,19 @@ import geocodeNewAddress from '../utils/geocoder.js';
 // Get public list of artisans
 
 export const getArtisanDirectory = asyncHandler(async (req, res) => {
-  const { skill, location, category, page = 1, limit = 20, sortBy, minRating, available } = req.query;
+  const {
+    skill, location, category, page = 1, limit = 20,
+    sortBy, minRating, available, onlyApproved
+  } = req.query;
+
   const filter = { role: 'artisan' };
 
-  // ✅ Boolean filter
+  // ✅ Only approved artisans
+  if (onlyApproved === 'true') {
+    filter['artisanProfile.isVerified'] = true;
+  }
+
+  // ✅ Available status
   if (available !== undefined) {
     filter['artisanProfile.available'] = available === 'true';
   }
@@ -20,17 +29,17 @@ export const getArtisanDirectory = asyncHandler(async (req, res) => {
     filter.rating = { $gte: Number(minRating) };
   }
 
-  // ✅ Skill (fuzzy match)
+  // ✅ Skill
   if (skill) {
     filter['artisanProfile.skills'] = { $in: [new RegExp(skill, 'i')] };
   }
 
-  // ✅ Category (fuzzy match)
+  // ✅ Category
   if (category) {
     filter['artisanProfile.category'] = new RegExp(category, 'i');
   }
 
-  // ✅ Location (use Location._id)
+  // ✅ Location by _id
   if (location) {
     const locDoc = await Location.findOne({ name: new RegExp(`^${location}$`, 'i') });
     if (locDoc) {
@@ -47,12 +56,12 @@ export const getArtisanDirectory = asyncHandler(async (req, res) => {
   let sortOption = {};
   if (sortBy === 'rating') sortOption.rating = -1;
   else if (sortBy === 'experience') sortOption['artisanProfile.yearsOfExperience'] = -1;
-  else sortOption.createdAt = -1; // default: newest
+  else sortOption.createdAt = -1;
 
   const [artisans, total] = await Promise.all([
     User.find(filter)
       .select('email avatar artisanProfile rating name')
-      .populate('artisanProfile.location', 'name') // 🔍 populate location name
+      .populate('artisanProfile.location', 'name')
       .skip(skip)
       .limit(parseInt(limit))
       .sort(sortOption),
@@ -66,6 +75,7 @@ export const getArtisanDirectory = asyncHandler(async (req, res) => {
     totalPages: Math.ceil(total / limit),
   });
 });
+
   
 // Get single artisan public profile
 export const getArtisanById = asyncHandler(async (req, res) => {
@@ -156,7 +166,7 @@ if (updates.address) {
 });
 
 export const getNearbyArtisans = asyncHandler(async (req, res) => {
-  const { lat, lng, radius = 2} = req.query;
+  const { lat, lng, radius = 1} = req.query;
 
   if (!lat || !lng) {
     return res.status(400).json({ message: 'Latitude and longitude are required.' });
