@@ -37,7 +37,7 @@ if (process.env.NODE_ENV === 'development') {
 
 const allowedOrigins = [
   'http://localhost:5173',
-  'https://your-frontend-url.netlify.app'
+  'https://deft-pasca-0b4ec2.netlify.app/'
 ];  
 
 app.use(cors({
