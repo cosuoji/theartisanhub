@@ -204,7 +204,6 @@ try {
   
     res.json({ message: "Password has been reset successfully." });
   };
-
   export const verifyEmail = async (req, res) => {
     const { token } = req.params;
   
@@ -216,6 +215,18 @@ try {
     });
   
     if (!user) {
+      // Try finding a user who already verified (optional enhancement)
+      const previouslyVerifiedUser = await User.findOne({
+        isEmailVerified: true,
+      });
+  
+      if (previouslyVerifiedUser) {
+        return res.status(200).json({
+          message: 'Your email is already verified. You can log in.',
+          alreadyVerified: true,
+        });
+      }
+  
       return res.status(400).json({ message: 'Verification link is invalid or has expired.' });
     }
   
@@ -226,6 +237,7 @@ try {
   
     res.json({ message: 'Email verified successfully. You can now log in.' });
   };
+  
 
   export const resendVerificationEmail = async (req, res) => {
     const { email } = req.body;
