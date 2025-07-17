@@ -9,6 +9,8 @@ import asyncHandler from "express-async-handler";
 import crypto from 'crypto';
 import Job from "../models/Job.js";
 import Review from "../models/Review.js";
+import axios from 'axios';
+
 
 
 
@@ -17,6 +19,23 @@ export const signup = async (req, res) => {
   try {
     const { password, name, role } = req.body;
     const email = req.body.email.toLowerCase();
+    const {recaptchaToken} = req.body
+
+  //     // 1a. Verify reCAPTCHA token with Google
+  // const { data } = await axios.post(
+  //   `https://www.google.com/recaptcha/api/siteverify`,
+  //   null,
+  //   {
+  //     params: {
+  //       secret: process.env.RECAPTCHA_SECRET_KEY,
+  //       response: recaptchaToken,
+  //     },
+  //   }
+  // );
+
+  // if (!data.success || data.score < 0.5) {
+  //   return res.status(400).json({ message: 'reCAPTCHA failed. Please try again.' });
+  // }
 
     // 1) Validate input
     const { isValid, errors } = validateSignupInput({ email, password });
@@ -73,6 +92,23 @@ export const login = asyncHandler(async (req, res) => {
 	  const { password } = req.body;
     const email = req.body.email.toLowerCase();
     const rememberMe = req.body.rememberMe || false;
+
+    
+  //     // 1a. Verify reCAPTCHA token with Google
+  // const { data } = await axios.post(
+  //   `https://www.google.com/recaptcha/api/siteverify`,
+  //   null,
+  //   {
+  //     params: {
+  //       secret: process.env.RECAPTCHA_SECRET_KEY,
+  //       response: recaptchaToken,
+  //     },
+  //   }
+  // );
+
+  // if (!data.success || data.score < 0.5) {
+  //   return res.status(400).json({ message: 'reCAPTCHA failed. Please try again.' });
+  // }
 
 	
 	  // 1. Validate input
