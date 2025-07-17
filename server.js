@@ -9,7 +9,7 @@ import { notFound, errorHandler } from './middleware/errorMiddleware.js';
 import cookieParser from 'cookie-parser';
 
 // 🌍 Route imports
-import authRoutes from './routes/authRoutes.js';
+ import authRoutes from './routes/authRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import artisanRoutes from './routes/artisanRoutes.js';
 import categoryRoutes from './routes/categoryRoutes.js';
@@ -26,16 +26,6 @@ import adminRoutes from "./routes/adminRoutes.js"
 
 dotenv.config();
 const app = express();
-
-// Middleware
-app.use(express.urlencoded({ extended: true }));
-app.use(helmet());
-if (process.env.NODE_ENV === 'development') {
-  app.use(morgan('dev'));
-}
-
-
-
 const allowedOrigins = [
   'http://localhost:5173',
   'https://deft-pasca-0b4ec2.netlify.app'
@@ -54,8 +44,13 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Explicitly handle OPTIONS for all routes
-app.options('*', cors());
+
+// Middleware
+app.use(express.urlencoded({ extended: true }));
+app.use(helmet());
+if (process.env.NODE_ENV === 'development') {
+  app.use(morgan('dev'));
+}
 
 
 
