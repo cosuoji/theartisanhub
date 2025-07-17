@@ -71,6 +71,20 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/jobs', jobRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/admin', adminRoutes);
+
+app.get('/test-cookies', (req, res) => {
+  res.json({ cookies: req.cookies });
+});
+
+
+app.get('/debug-cookie', (req, res) => {
+  res.cookie('testCookie', 'hello', {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'None',
+  });
+  res.send('Cookie set');
+});
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 
