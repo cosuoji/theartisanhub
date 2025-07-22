@@ -8,6 +8,10 @@ import {
   getAllUsers,
   restoreDeletedUser,
 } from '../controllers/adminController.js';
+import AuditLog from '../models/AuditLog.js';
+import asyncHandler from 'express-async-handler';
+
+
 
 const router = express.Router();
 
@@ -184,6 +188,15 @@ router.get('/analytics', protectRoute, adminRoute, getAdminAnalytics);
  */
 
 router.patch('/users/:id/restore', protectRoute, adminRoute, restoreDeletedUser);
+
+router.get('/audit-logs', protectRoute, adminRoute, asyncHandler(async (req, res) => {
+  const logs = await AuditLog.find()
+    .populate('actor', 'name email')
+    .populate('target')
+    .sort({ createdAt: -1 })
+    .limit(100);
+  res.json(logs);
+}));
 
 
 export default router;

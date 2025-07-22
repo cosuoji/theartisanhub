@@ -7,6 +7,8 @@ import morgan from 'morgan';
 import helmet from 'helmet';
 import { notFound, errorHandler } from './middleware/errorMiddleware.js';
 import cookieParser from 'cookie-parser';
+import * as Sentry from '@sentry/node';
+import logger from './utils/logger.js';
 
 // 🌍 Route imports
  import authRoutes from './routes/authRoutes.js';
@@ -20,17 +22,19 @@ import { swaggerSpec } from './config/swagger.js';
 import reviewRoutes from './routes/reviewRoutes.js';
 import jobRoutes from './routes/jobRoutes.js';
 import adminRoutes from "./routes/adminRoutes.js"
+import { healthCheck } from './controllers/healthController.js';
 
 
 
 
 dotenv.config();
 const app = express();
-const allowedOrigins = [
-  'http://localhost:5173',
-  'https://deft-pasca-0b4ec2.netlify.app'
-];
+// const allowedOrigins = [
+//   'http://localhost:5173',
+//   'https://deft-pasca-0b4ec2.netlify.app'
+// ];
 
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || '').split(',').map(o => o.trim());
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin || allowedOrigins.includes(origin)) {
@@ -44,6 +48,14 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
+if (process.env.NODE_ENV === 'production') {
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    tracesSampleRate: 1.0,
+  });
+  app.use(Sentry.Handlers.requestHandler());
+  app.use(Sentry.Handlers.tracingHandler());
+}
 
 // Middleware
 app.use(express.urlencoded({ extended: true }));
@@ -87,13 +99,34 @@ app.get('/debug-cookie', (req, res) => {
 });
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
+// Health endpoint (no auth)
+app.get('/api/health', healthCheck);
 
 // ⚠️ Error Handlers
 app.use(notFound);
 app.use(errorHandler);
 
+if (process.env.NODE_ENV === 'production') {
+  app.use(Sentry.Handlers.errorHandler());
+}
+process.on('uncaughtException', (err) => {
+  logger.error('Uncaught Exception', err);
+  process.exit(1);
+});
+process.on('unhandledRejection', (reason) => {
+  logger.error('Unhandled Rejection', reason);
+  process.exit(1);
+});
+
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-	console.log("Server is running on http://localhost:" + PORT);
+	logger.info("Server is running on http://localhost:" + PORT);
 	connectDB();
 });
+
+//  if (process.env.NODE_ENV !== 'test') {
+//   app.listen(PORT, () => console.log(`Server on ${PORT}`));
+//   connectDB();
+//  }
+//  export default app;

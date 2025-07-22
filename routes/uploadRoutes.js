@@ -3,6 +3,13 @@ import { uploadAvatar, uploadArtisanImages, removeArtisanImage } from '../contro
 import { protectRoute, artisanOnly } from '../middleware/authMiddleware.js';
 import { upload } from '../middleware/upload.js';
 import multer from 'multer';
+import rateLimit from 'express-rate-limit';
+
+const uploadLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 20,
+  message: 'Too many uploads, try again later.',
+});
 
 
 const router = express.Router();
@@ -47,7 +54,7 @@ const router = express.Router();
  *       401:
  *         description: Unauthorized
  */
-router.post('/avatar', protectRoute, upload.single('file'), uploadAvatar);
+router.post('/avatar', uploadLimiter, protectRoute, upload.single('file'), uploadAvatar);
 
 /**
  * @swagger
@@ -88,6 +95,7 @@ router.post('/avatar', protectRoute, upload.single('file'), uploadAvatar);
  */
 router.post(
   '/artisan-images',
+  uploadLimiter,
   protectRoute,
   artisanOnly,
   upload.array('images', 5),

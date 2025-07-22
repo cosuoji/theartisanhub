@@ -147,8 +147,8 @@ if (startDate && endDate) {
 
   const [jobs, total] = await Promise.all([
     Job.find()
-      .populate('user', 'email', "name")
-      .populate('artisan', 'email', "name")
+      .populate('user', 'email')
+      .populate('artisan', 'email',)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit),

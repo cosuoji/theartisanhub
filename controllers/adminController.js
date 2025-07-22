@@ -1,5 +1,7 @@
 import User from "../models/User.js";
 import asyncHandler from 'express-async-handler';
+import { logAction } from '../utils/audit.js';
+
 
 
 export const approveArtisanProfile = asyncHandler(async (req, res) => {
@@ -15,6 +17,7 @@ export const approveArtisanProfile = asyncHandler(async (req, res) => {
   
     artisan.artisanProfile.isApproved = true;
     await artisan.save();
+    await logAction(req.user, artisan, 'approve-artisan');
   
     res.json({ message: 'Artisan approved and verified', artisan });
   });
@@ -68,6 +71,7 @@ export const getAllUsers = asyncHandler(async (req, res) => {
   
     user.isBanned = !user.isBanned;
     await user.save();
+    await logAction(req.user, user, user.isBanned ? 'ban' : 'unban');
   
     res.json({
       message: `User ${user.isBanned ? 'banned' : 'unbanned'} successfully`,

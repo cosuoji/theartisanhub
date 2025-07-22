@@ -15,5 +15,6 @@ const jobSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 jobSchema.index({ user: 1, artisan: 1 });
+jobSchema.index({ status: 1 });
 
 export default mongoose.model('Job', jobSchema);

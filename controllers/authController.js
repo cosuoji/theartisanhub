@@ -1,7 +1,6 @@
 import User from "../models/User.js";
 import { redis } from "../utils/redis.js";
 import jwt from "jsonwebtoken";
-import { validateSignupInput } from "../utils/validate.js";
 import { setCookies, storeRefreshToken, generateTokens } from "../utils/authHelpers.js";
 import { sendResetEmail, sendVerificationEmail } from "../utils/sendEmails.js";
 import { generateHashedToken } from "../utils/token.js";
@@ -9,8 +8,7 @@ import asyncHandler from "express-async-handler";
 import crypto from 'crypto';
 import Job from "../models/Job.js";
 import Review from "../models/Review.js";
-import axios from 'axios';
-
+import { emailQueue } from "../jobs/index.js";
 
 
 
@@ -37,12 +35,6 @@ export const signup = async (req, res) => {
   //   return res.status(400).json({ message: 'reCAPTCHA failed. Please try again.' });
   // }
 
-    // 1) Validate input
-    const { isValid, errors } = validateSignupInput({ email, password });
-    if (!isValid) {
-      return res.status(400).json({ message: errors.join(' ') });
-    }
-
     // 2) Check if user already exists
     const userExists = await User.findOne({ email });
     if (userExists) {
@@ -65,7 +57,8 @@ export const signup = async (req, res) => {
 
     // 6) Attempt to send verification email (but don’t crash if it fails)
     try {
-      await sendVerificationEmail(user.email, rawToken);
+      //await sendVerificationEmail(user.email, rawToken);
+      await emailQueue.add('verify', { type: 'verify', to: user.email, token: rawToken });
     } catch (emailErr) {
       console.error('Email send failed:', emailErr.message);
       // Optionally log/report email errors somewhere
@@ -210,7 +203,8 @@ try {
     user.resetPasswordExpires = expires;
     await user.save();
   
-    await sendResetEmail(user.email, rawToken);
+    //await sendResetEmail(user.email, rawToken);
+    await emailQueue.add('reset', { type: 'reset', to: user.email, token: rawToken });
     
   
     res.status(200).json({ message: "If that email exists, a reset link has been sent." });
@@ -380,23 +374,29 @@ try {
 
   // controller
 export const getArtisanStats = asyncHandler(async (req, res) => {
-  const userId = req.user._id;
-
-  const [jobCount, reviews, user] = await Promise.all([
-    Job.countDocuments({ artisan: userId, status: 'completed' }),
-    Review.find({ artisan: userId }),
-    User.findById(userId).select('artisanProfile.available'),
-  ]);
-
-  const avgRating = reviews.length
-    ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
-    : 0;
-
-  res.json({
-    totalJobs: jobCount,
-    averageRating: avgRating,
-    reviewCount: reviews.length,
-    available: user.artisanProfile.available,
-  });
+ try {
+   const userId = req.user._id;
+ 
+   const [jobCount, reviews, user] = await Promise.all([
+     Job.countDocuments({ artisan: userId, status: 'completed' }),
+     Review.find({ artisan: userId }),
+     User.findById(userId).select('artisanProfile.available'),
+   ]);
+ 
+   console.log(user, jobCount, reviews)
+   
+   const avgRating = reviews.length
+     ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
+     : 0;
+ 
+   res.json({
+     totalJobs: jobCount,
+     averageRating: avgRating,
+     reviewCount: reviews.length,
+     available: user.artisanProfile.available,
+   });
+ } catch (error) {
+    res.status(401).json({ message: error.message || "Verify Your email" });
+ }
 });
 

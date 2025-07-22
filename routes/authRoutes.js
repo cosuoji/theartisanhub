@@ -80,7 +80,7 @@ router.post('/signup', signup);
  *       401:
  *         description: Invalid credentials
  */
-router.post('/login', login);
+router.post('/login',loginLimiter,  login);
 
 /**
  * @swagger
