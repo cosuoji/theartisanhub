@@ -57,8 +57,8 @@ export const signup = async (req, res) => {
 
     // 6) Attempt to send verification email (but don’t crash if it fails)
     try {
-      //await sendVerificationEmail(user.email, rawToken);
-      await emailQueue.add('verify', { type: 'verify', to: user.email, token: rawToken });
+      await sendVerificationEmail(user.email, rawToken);
+      //await emailQueue.add('verify', { type: 'verify', to: user.email, token: rawToken });
     } catch (emailErr) {
       console.error('Email send failed:', emailErr.message);
       // Optionally log/report email errors somewhere
@@ -203,8 +203,8 @@ try {
     user.resetPasswordExpires = expires;
     await user.save();
   
-    //await sendResetEmail(user.email, rawToken);
-    await emailQueue.add('reset', { type: 'reset', to: user.email, token: rawToken });
+    await sendResetEmail(user.email, rawToken);
+    //await emailQueue.add('reset', { type: 'reset', to: user.email, token: rawToken });
     
   
     res.status(200).json({ message: "If that email exists, a reset link has been sent." });
