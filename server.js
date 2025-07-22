@@ -29,12 +29,13 @@ import { healthCheck } from './controllers/healthController.js';
 
 dotenv.config();
 const app = express();
-// const allowedOrigins = [
-//   'http://localhost:5173',
-//   'https://deft-pasca-0b4ec2.netlify.app'
-// ];
+const allowedOrigins = [
+  'http://localhost:5173',
+  'https://deft-pasca-0b4ec2.netlify.app'
+];
 
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || '').split(',').map(o => o.trim());
+//const allowedOrigins = (process.env.ALLOWED_ORIGINS || '').split(',').map(o => o.trim());
+
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin || allowedOrigins.includes(origin)) {
