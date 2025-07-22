@@ -8,7 +8,7 @@ import asyncHandler from "express-async-handler";
 import crypto from 'crypto';
 import Job from "../models/Job.js";
 import Review from "../models/Review.js";
-import { emailQueue } from "../jobs/index.js";
+//import { emailQueue } from "../jobs/index.js";
 
 
 
