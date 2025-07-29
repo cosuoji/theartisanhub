@@ -97,3 +97,26 @@ export const updateUserProfile = asyncHandler(async (req, res) => {
   await user.save();
   res.json({ message: 'Profile updated', user });
 });
+
+export const toggleFavourite = asyncHandler(async (req, res) => {
+try {
+ 
+    const { artisanId } = req.params;
+    const user = await User.findById(req.user._id);
+    const index = user.favourites.indexOf(artisanId);
+  
+    if (index === -1) user.favourites.push(artisanId);
+    else user.favourites.splice(index, 1);
+  
+    await user.save();
+    res.json({ favourites: user.favourites });
+} catch (error) {
+  console.log(error.message)
+	  res.status(500).json({ message: error.message });
+}
+});
+
+export const getFavourite = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id).populate('favourites', 'name avatar artisanProfile rating');
+   res.json(user.favourites);
+})

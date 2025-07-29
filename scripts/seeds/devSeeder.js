@@ -35,7 +35,7 @@ const seed = async () => {
     const users = [];
     const artisans = [];
 
-    for (let i = 0; i < 40; i++) {
+    for (let i = 0; i < 100; i++) {
       users.push(await User.create({
         name: faker.person.fullName(),
         email: faker.internet.email().toLowerCase(),
@@ -48,7 +48,7 @@ const seed = async () => {
     const locations = await Location.find({ isActive: true });
     if (!locations.length) throw new Error('No active locations found.');
     
-    for (let i = 0; i < 40; i++) {
+    for (let i = 0; i < 100; i++) {
       const randomLocation = faker.helpers.arrayElement(locations);
       const randomStreet = faker.helpers.arrayElement(streetNames);
       const houseNumber = faker.number.int({ min: 1, max: 200 });

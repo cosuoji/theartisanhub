@@ -7,8 +7,10 @@ import {
   getMyReviews,
 } from '../controllers/reviewController.js';
 import { protectRoute, adminRoute } from '../middleware/authMiddleware.js';
+import { upload } from '../middleware/upload.js';
 
 const router = express.Router();
+
 
 /**
  * @swagger
@@ -99,7 +101,7 @@ router.get("/my-reviews", protectRoute, getMyReviews);
  *       400:
  *         description: Validation or duplicate review error
  */
-router.post('/', protectRoute, createReview);
+router.post('/', protectRoute,  upload.array('images', 3), createReview);
 
 /**
  * @swagger

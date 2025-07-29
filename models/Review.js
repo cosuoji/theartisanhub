@@ -19,6 +19,8 @@ const reviewSchema = new mongoose.Schema({
     max: 5,
   },
   comment: { type: String },
+  images: [{ type: String }], // URLs from ImageKit
+
 }, { timestamps: true });
 
 reviewSchema.index({ artisan: 1, user: 1 }, { unique: true }); // 1 review per user per artisan

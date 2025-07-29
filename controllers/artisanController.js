@@ -2,51 +2,25 @@ import User from '../models/User.js';
 import asyncHandler from 'express-async-handler';
 import Location from "../models/Location.js"
 //import geocodeNewAddress from '../utils/geocoder.js';
-import { cacheGet, cacheSet } from '../utils/cache.js';
+import { cacheGet, cacheSet, cacheDelPattern } from '../utils/cache.js';
+import { geoQueue } from '../jobs/index.js';
 
 
-
-// Get public list of artisans
-
-// For the map view (markers only)
-export const getMapArtisans = asyncHandler(async (req, res) => {
-  const { location } = req.query;
-  
-  const filter = { 
-    role: 'artisan', 
-    isDeleted: false,
-    'artisanProfile.coordinates': { $exists: true } // Only artisans with geo data
-  };
-
-  // Optional location filter
-  if (location) {
-    const locDoc = await Location.findOne({ 
-      name: new RegExp(`^${location}$`, 'i') 
-    });
-    if (locDoc) {
-      filter['artisanProfile.location'] = locDoc._id;
-    }
-  }
-
-  const artisans = await User.find(filter)
-    .select('name artisanProfile.coordinates artisanProfile.skills artisanProfile.location')
-    .populate('artisanProfile.location', 'name')
-    .limit(500); // Safety limit
-
-  res.json({ artisans });
-});
 
 // For the list view (with full filtering)
 export const getArtisanDirectory = asyncHandler(async (req, res) => {
+  const { mapOnly } = req.query;
+  const limit = mapOnly ? 0 : Math.min(parseInt(req.query.limit) || 20, 100);
   const {
-    skill, location, category, page = 1, limit = 20,
+    skill, location, category, page = 1,
     sortBy, minRating, available, onlyApproved, minYears
   } = req.query;
 
   // Cache key (excludes pagination for better cache hits)
   const cacheKey = `artisan_dir:${JSON.stringify({
-    skill, location, category, minRating, available, onlyApproved, minYears, sortBy
-  })}`;
+  skill, location, category, minRating, available, onlyApproved, minYears, sortBy,
+  page, limit  // ← Add these
+})}`;
 
   // Try cache first
   const cached = await cacheGet(cacheKey);
@@ -104,11 +78,47 @@ export const getArtisanDirectory = asyncHandler(async (req, res) => {
   
 // Get single artisan public profile
 export const getArtisanById = asyncHandler(async (req, res) => {
-  const artisan = await User.findOne({ _id: req.params.id, role: 'artisan', isDeleted: false}).select('-password').populate('artisanProfile.location', 'name');
-  if (!artisan) return res.status(404).json({ message: 'Artisan not found' });
+  const artisan = await User.findOne({
+    _id: req.params.id,
+    role: 'artisan',
+    isDeleted: false,
+  })
+    .select('-password')
+    .populate('artisanProfile.location', 'name');
+
+  if (!artisan) {
+    return res.status(404).json({ message: 'Artisan not found' });
+  }
+
+  // Share preview
+  if (req.query.share === 'true') {
+    const html = `
+      <!DOCTYPE html>
+      <html lang="en">
+        <head>
+          <meta charset="UTF-8" />
+          <meta property="og:title" content="${artisan.name}" />
+          <meta property="og:description" content="${
+            artisan.artisanProfile?.bio || 'Artisan on ArtisanHub'
+          }" />
+          <meta property="og:image" content="${artisan.avatar}" />
+          <meta property="og:url" content="${
+            process.env.CLIENT_URL
+          }/artisans/${artisan._id}" />
+          <meta http-equiv="refresh" content="0; url=${
+            process.env.CLIENT_URL
+          }/artisans/${artisan._id}" />
+        </head>
+        <body>Redirecting to profile…</body>
+      </html>
+    `;
+    res.setHeader('Content-Type', 'text/html');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    return res.send(html);
+  }
+
   res.json(artisan);
 });
-
 
 export const updateArtisanProfile = asyncHandler(async (req, res) => {
   const updates = req.body;
@@ -151,8 +161,8 @@ export const updateArtisanProfile = asyncHandler(async (req, res) => {
 // ✅ If a new address is provided, try geocoding it
 if (updates.address) {
   try {
-    //await geoQueue.add('geocode', { address: updates.address, userId: user._id });
-    const geo = await geocodeNewAddress(updates.address);
+    await geoQueue.add('geocode', { address: updates.address, userId: user._id });
+    //const geo = await geocodeNewAddress(updates.address);
     user.artisanProfile.coordinates = {
       type: 'Point',
       coordinates: [geo.lng, geo.lat],
@@ -188,28 +198,81 @@ if (updates.address) {
   }
 
   await user.save();
+  await cacheDelPattern('artisan_dir:*'); // bust every cached 
   res.json(user);
 });
 
+
+// controllers/artisanController.js
 export const getNearbyArtisans = asyncHandler(async (req, res) => {
-  const { lat, lng, radius = 1} = req.query;
+  const { lat, lng, radius = 3, skill, available, onlyApproved, page = 1, limit = 10 } = req.query;
 
   if (!lat || !lng) {
     return res.status(400).json({ message: 'Latitude and longitude are required.' });
   }
 
-  const artisans = await User.find({
+  const parsedLat = parseFloat(lat);
+  const parsedLng = parseFloat(lng);
+  const parsedRadius = parseFloat(radius) * 1000; // convert to meters
+  const skip = (Number(page) - 1) * Number(limit);
+
+  // Build the query for geoNear
+  const geoQuery = {
     role: 'artisan',
-    'artisanProfile.coordinates': {
-      $near: {
-        $geometry: { type: 'Point', coordinates: [parseFloat(lng), parseFloat(lat)] },
-        $maxDistance: radius * 1000, // in meters
+    isDeleted: false,
+    ...(skill && { 'artisanProfile.skills': { $in: [skill] } }),
+    ...(onlyApproved !== undefined && { 'artisanProfile.isApproved': onlyApproved === 'true' }),
+    ...(available !== undefined && { 'artisanProfile.available': available === 'true' }),
+  };
+
+  const geoNearStage = {
+    $geoNear: {
+      near: {
+        type: 'Point',
+        coordinates: [parsedLng, parsedLat],
+      },
+      distanceField: 'distance',
+      maxDistance: parsedRadius,
+      spherical: true,
+      query: geoQuery,
+    },
+  };
+
+  const pipeline = [
+    geoNearStage,
+    {
+      $project: {
+        email: 1,
+        name: 1,
+        rating: 1,
+        avatar: 1,
+        artisanProfile: 1,
+        distance: 1,
       },
     },
-  }).select('email avatar artisanProfile rating name')
+    { $skip: skip },
+    { $limit: Number(limit) },
+  ];
 
-  res.json({ total: artisans.length, artisans });
+  const [results, countResults] = await Promise.all([
+    User.aggregate(pipeline),
+    User.aggregate([
+      geoNearStage,
+      { $count: 'total' },
+    ]),
+  ]);
+
+  const total = countResults[0]?.total || 0;
+
+  res.json({
+    total,
+    page: Number(page),
+    totalPages: Math.ceil(total / Number(limit)),
+    artisans: results,
+  });
 });
+
+
 
 export const toggleAvailability = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id);
@@ -224,9 +287,21 @@ export const toggleAvailability = asyncHandler(async (req, res) => {
 
   user.artisanProfile.available = !user.artisanProfile.available;
   await user.save();
+  await cacheDelPattern('artisan_dir:*'); // bust every cached 
 
   res.json({
     available: user.artisanProfile.available,
     message: `Availability updated to ${user.artisanProfile.available}`,
   });
+});
+
+// PATCH /artisans/me/availability
+export const updateAvailability = asyncHandler(async (req, res) => {
+  const { slots } = req.body; // [{ start: ISO, end: ISO }]
+  const user = await User.findById(req.user._id);
+  if (user.role !== 'artisan') return res.status(403).json({ message: 'Forbidden' });
+
+  user.artisanProfile.availabilitySlots = slots;
+  await user.save();
+  res.json({ message: 'Availability updated', slots });
 });

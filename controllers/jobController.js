@@ -2,9 +2,18 @@
 import Job from '../models/Job.js';
 import asyncHandler from 'express-async-handler';
 import User from '../models/User.js';
+import { redis } from '../utils/redis.js';
+
 
 export const createJob = asyncHandler(async (req, res) => {
   const { artisanId, description} = req.body;
+  const { referrer } = req.body; // e.g. ?ref=ABC123
+
+  if (referrer) {
+    const referrerId = await redis.get(`referral_code:${referrer}`);
+    if (referrerId) await recordReferral(referrerId, req.user._id);
+  }
+
 
   const artisan = await User.findById(artisanId);
   if (!artisan || artisan.role !== 'artisan') {

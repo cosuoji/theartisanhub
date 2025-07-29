@@ -10,3 +10,15 @@ export const cacheSet = async (key, data, ttl = 300) => {
 };
 
 export const cacheDel = async (key) => redis.del(key);
+
+// utils/cache.js  (next to cacheGet / cacheSet)
+export const cacheDelPattern = async (pattern) => {
+  // SCAN + DEL to avoid blocking Redis
+  const stream = redis.scanStream({ match: pattern });
+  stream.on('data', (keys) => {
+    if (keys.length) {
+      redis.unlink(keys); // faster non-blocking delete
+    }
+  });
+  await new Promise((res) => stream.on('end', res));
+};

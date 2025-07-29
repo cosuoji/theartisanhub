@@ -18,8 +18,10 @@ import {
   resendVerificationLimiter,
 } from '../middleware/rateLimiters.js';
 import { protectRoute } from '../middleware/authMiddleware.js';
+import { validatePasswordReset, validateSignup } from '../middleware/validators.js';
 
 const router = express.Router();
+
 
 /**
  * @swagger
@@ -52,7 +54,7 @@ const router = express.Router();
  *       400:
  *         description: Validation error
  */
-router.post('/signup', signup);
+router.post('/signup', validateSignup, signup);
 
 /**
  * @swagger
@@ -133,7 +135,7 @@ router.post('/forgot-password', forgotPasswordLimiter, forgotPassword);
  *       400:
  *         description: Invalid or expired token
  */
-router.post('/reset-password/:token', resetPassword);
+router.post('/reset-password/:token', validatePasswordReset, resetPassword);
 
 /**
  * @swagger

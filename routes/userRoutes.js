@@ -7,6 +7,8 @@ import {
   deleteUser,
   changeUserRole,
   updateUserProfile,
+  toggleFavourite,
+  getFavourite,
 } from '../controllers/userController.js';
 import { protectRoute, emailVerified, adminRoute } from '../middleware/authMiddleware.js';
 
@@ -69,7 +71,10 @@ router.get('/me', protectRoute, emailVerified, getMyProfile);
  *         description: Email not verified
  */
 router.put('/me', protectRoute, emailVerified, updateMyProfile);
-
+router.patch('/profile', protectRoute, updateUserProfile);
+router.get('/', protectRoute, adminRoute, getAllUsers);
+router.get("/favourites", protectRoute, getFavourite)
+router.patch("/favourites/:artisanId", protectRoute, toggleFavourite)
 /**
  * @swagger
  * /users/{id}:
@@ -118,7 +123,48 @@ router.get('/:id', getUserById);
  *       403:
  *         description: Admin access required
  */
-router.get('/', protectRoute, adminRoute, getAllUsers);
+
+
+/**
+ * @swagger
+ * /auth/profile:
+ *   patch:
+ *     summary: Update user profile (phone and address)
+ *     tags: [Auth]
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               phone:
+ *                 type: string
+ *                 example: "+2347012345678"
+ *               address:
+ *                 type: string
+ *                 example: "123 Artisan Lane, Lagos, Nigeria"
+ *     responses:
+ *       200:
+ *         description: Profile updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Profile updated
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
+ *       400:
+ *         description: Bad request – invalid input
+ *       401:
+ *         description: Unauthorized – not logged in
+ */
+
 
 /**
  * @swagger
@@ -186,46 +232,7 @@ router.delete('/:id', protectRoute, adminRoute, deleteUser);
  */
 router.put('/:id/role', protectRoute, adminRoute, changeUserRole);
 
-/**
- * @swagger
- * /auth/profile:
- *   patch:
- *     summary: Update user profile (phone and address)
- *     tags: [Auth]
- *     security:
- *       - cookieAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               phone:
- *                 type: string
- *                 example: "+2347012345678"
- *               address:
- *                 type: string
- *                 example: "123 Artisan Lane, Lagos, Nigeria"
- *     responses:
- *       200:
- *         description: Profile updated successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Profile updated
- *                 user:
- *                   $ref: '#/components/schemas/User'
- *       400:
- *         description: Bad request – invalid input
- *       401:
- *         description: Unauthorized – not logged in
- */
-router.patch('/profile', protectRoute, updateUserProfile);
+
 
 
 export default router;

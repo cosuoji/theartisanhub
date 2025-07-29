@@ -1,6 +1,8 @@
 import User from "../models/User.js";
 import asyncHandler from 'express-async-handler';
 import { logAction } from '../utils/audit.js';
+import Job from "../models/Job.js";
+import Review from "../models/Review.js";
 
 
 
@@ -105,12 +107,21 @@ export const getAllUsers = asyncHandler(async (req, res) => {
       bannedUsers,
       approvedArtisans,
       softDeletedUsers,
+      totalJobs,
+      completedJobs,
+      pendingJobs,
+      totalReviews,
+      
     ] = await Promise.all([
       User.countDocuments({}),
       User.countDocuments({ role: 'artisan' }),
       User.countDocuments({ isBanned: true }),
       User.countDocuments({ role: 'artisan', 'artisanProfile.isApproved': true }),
       User.countDocuments({ isDeleted: true }),
+      Job.countDocuments({}),
+      Job.countDocuments({ status: 'completed' }),
+      Job.countDocuments({ status: 'pending' }),
+      Review.countDocuments({}),
     ]);
   
     res.json({
@@ -119,6 +130,10 @@ export const getAllUsers = asyncHandler(async (req, res) => {
       bannedUsers,
       approvedArtisans,
       softDeletedUsers,
+      totalJobs,
+      completedJobs,
+      pendingJobs,
+      totalReviews,
     });
   });
    

@@ -24,6 +24,10 @@ export const createReview = asyncHandler(async (req, res) => {
     return res.status(403).json({ message: "Please verify your email to leave reviews." });
   }
 
+  if (req.files?.length > 3) return res.status(400).json({ message: 'Max 3 images allowed' });
+
+  const images = req.files?.map(file => file.path) || []; // ImageKit URLs from middleware
+
   // ✅ Ensure the user has completed a job with the artisan
   const completedJob = await Job.findOne({
     user: req.user._id,
@@ -50,18 +54,16 @@ export const createReview = asyncHandler(async (req, res) => {
       user: req.user._id,
       rating,
       comment,
+      images,
     });
 
-    // 📊 Update artisan average rating
-    const result = await Review.aggregate([
-      { $match: { artisan: artisan._id } },
-      { $group: { _id: '$artisan', avgRating: { $avg: '$rating' } } },
-    ]);
-    const avgRating = result[0]?.avgRating || 0;
-    artisan.rating = avgRating.toFixed(1);
-    await artisan.save();
+  // update average rating
+  const avg = await Review.aggregate([{ $match: { artisan: artisan._id } }, { $group: { _id: null, avg: { $avg: '$rating' } } }]);
+  artisan.rating = avg[0]?.avg.toFixed(1) || 0;
+  await artisan.save();
 
-    res.status(201).json(review);
+  res.status(201).json(review);
+
   } catch (err) {
     if (err.code === 11000) {
       return res.status(400).json({ message: 'You have already reviewed this artisan.' });

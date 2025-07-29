@@ -11,7 +11,6 @@ const jobSchema = new mongoose.Schema({
     enum: ['pending', 'accepted', 'in-progress', 'completed', 'cancelled'],
     default: 'pending',
   },
-  scheduledAt: { type: Date },
 }, { timestamps: true });
 
 jobSchema.index({ user: 1, artisan: 1 });

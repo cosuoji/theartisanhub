@@ -2,7 +2,6 @@ import { Queue, Worker } from 'bullmq';
 import { redis } from '../utils/redis.js';
 import { sendVerificationEmail, sendResetEmail } from '../utils/sendEmails.js';
 import geocodeNewAddress from '../utils/geocoder.js';
-import logger from '../utils/logger.js';
 
 const connection = {
   host: redis.options.host,
@@ -12,21 +11,19 @@ const connection = {
   maxRetriesPerRequest: null,
 };
 
-const emailQueue = new Queue('email', { connection });
-const geoQueue   = new Queue('geo',   { connection });
 
-// email worker
+// 1. Queues (used to enqueue jobs)
+export const emailQueue = new Queue('email', { connection });
+export const geoQueue   = new Queue('geo',   { connection });
+
+// 2. In-process workers (run inside the web dyno)
 new Worker('email', async (job) => {
   const { type, to, token } = job.data;
   if (type === 'verify') await sendVerificationEmail(to, token);
   if (type === 'reset')  await sendResetEmail(to, token);
 }, { connection });
 
-// geocode worker
 new Worker('geo', async (job) => {
   const { address, userId } = job.data;
   const coords = await geocodeNewAddress(address);
-  logger.info(`Geocoded ${address}`, { userId, coords });
 }, { connection });
-
-export { emailQueue, geoQueue };

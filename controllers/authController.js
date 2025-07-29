@@ -8,7 +8,7 @@ import asyncHandler from "express-async-handler";
 import crypto from 'crypto';
 import Job from "../models/Job.js";
 import Review from "../models/Review.js";
-//import { emailQueue } from "../jobs/index.js";
+import { emailQueue } from "../jobs/index.js";
 
 
 
@@ -17,7 +17,15 @@ export const signup = async (req, res) => {
   try {
     const { password, name, role } = req.body;
     const email = req.body.email.toLowerCase();
-    const {recaptchaToken} = req.body
+
+      const { referrer } = req.body; // e.g. ?ref=ABC123
+    
+      if (referrer) {
+        const referrerId = await redis.get(`referral_code:${referrer}`);
+        if (referrerId) await recordReferral(referrerId, req.user._id);
+      }
+    
+    // const {recaptchaToken} = req.body
 
   //     // 1a. Verify reCAPTCHA token with Google
   // const { data } = await axios.post(
@@ -57,8 +65,8 @@ export const signup = async (req, res) => {
 
     // 6) Attempt to send verification email (but don’t crash if it fails)
     try {
-      await sendVerificationEmail(user.email, rawToken);
-      //await emailQueue.add('verify', { type: 'verify', to: user.email, token: rawToken });
+      //await sendVerificationEmail(user.email, rawToken);
+      await emailQueue.add('verify', { type: 'verify', to: user.email, token: rawToken });
     } catch (emailErr) {
       console.error('Email send failed:', emailErr.message);
       // Optionally log/report email errors somewhere
@@ -203,8 +211,8 @@ try {
     user.resetPasswordExpires = expires;
     await user.save();
   
-    await sendResetEmail(user.email, rawToken);
-    //await emailQueue.add('reset', { type: 'reset', to: user.email, token: rawToken });
+    //await sendResetEmail(user.email, rawToken);
+    await emailQueue.add('reset', { type: 'reset', to: user.email, token: rawToken });
     
   
     res.status(200).json({ message: "If that email exists, a reset link has been sent." });

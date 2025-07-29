@@ -10,6 +10,7 @@ import cookieParser from 'cookie-parser';
 //import * as Sentry from '@sentry/node';
 import logger from './utils/logger.js';
 
+
 // 🌍 Route imports
  import authRoutes from './routes/authRoutes.js';
 import userRoutes from './routes/userRoutes.js';
@@ -23,6 +24,7 @@ import reviewRoutes from './routes/reviewRoutes.js';
 import jobRoutes from './routes/jobRoutes.js';
 import adminRoutes from "./routes/adminRoutes.js"
 import { healthCheck } from './controllers/healthController.js';
+import referralRoutes from "./routes/referralRoutes.js"
 
 
 
@@ -45,7 +47,7 @@ app.use(cors({
     }
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Explicitly allow OPTIONS
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'], // Explicitly allow OPTIONS
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
@@ -84,6 +86,8 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/jobs', jobRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/admin', adminRoutes);
+app.use("/api/referral", referralRoutes)
+
 
 app.get('/test-cookies', (req, res) => {
   res.json({ cookies: req.cookies });

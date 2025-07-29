@@ -5,7 +5,7 @@ import {
   updateArtisanProfile,
   getNearbyArtisans,
   toggleAvailability,
-  getMapArtisans
+  updateAvailability
 } from '../controllers/artisanController.js';
 
 import {
@@ -66,7 +66,6 @@ const router = express.Router();
  */
 router.get('/', getArtisanDirectory);
 router.get('/nearby', getNearbyArtisans);
-router.get("/map", getMapArtisans)
 
 /**
  * @swagger
@@ -184,6 +183,8 @@ router.patch(
   artisanOnly,
   toggleAvailability
 );
+
+router.patch('/me/availability', protectRoute, artisanOnly, updateAvailability);
 
 /**
  /artisans/me/stats:

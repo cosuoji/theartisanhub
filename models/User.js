@@ -10,7 +10,7 @@ const userSchema = new mongoose.Schema({
   address: { type: String },
   avatar: {
     type: String,
-    default: "https://avatar.iran.liara.run/public/32",
+    default: "https://avatar.iran.liara.run/public/32  ",
   },
   artisanProfile: artisanProfileSchema,
   verificationToken: String,
@@ -21,6 +21,7 @@ const userSchema = new mongoose.Schema({
   isEmailVerified: { type: Boolean, default: false },
   isBanned: { type: Boolean, default: false },
   isDeleted: { type: Boolean, default: false },
+  favourites: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
 }, { timestamps: true });
 
 // 📦 Indexing for geospatial search
@@ -42,6 +43,7 @@ userSchema.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
+
 // 🧼 Hide sensitive fields in JSON
 userSchema.set('toJSON', {
   transform: (doc, ret) => {
@@ -54,3 +56,4 @@ userSchema.set('toJSON', {
 });
 
 export default mongoose.model('User', userSchema);
+
