@@ -161,8 +161,8 @@ export const updateArtisanProfile = asyncHandler(async (req, res) => {
 // ✅ If a new address is provided, try geocoding it
 if (updates.address) {
   try {
-    await geoQueue.add('geocode', { address: updates.address, userId: user._id });
-    //const geo = await geocodeNewAddress(updates.address);
+    //await geoQueue.add('geocode', { address: updates.address, userId: user._id });
+    const geo = await geocodeNewAddress(updates.address);
     user.artisanProfile.coordinates = {
       type: 'Point',
       coordinates: [geo.lng, geo.lat],

@@ -7,8 +7,11 @@ import morgan from 'morgan';
 import helmet from 'helmet';
 import { notFound, errorHandler } from './middleware/errorMiddleware.js';
 import cookieParser from 'cookie-parser';
-//import * as Sentry from '@sentry/node';
 import logger from './utils/logger.js';
+import http from 'http';
+import { Server } from 'socket.io';
+import Message from './models/Message.js';
+import { imagekit } from './utils/imagekit.js';
 
 
 // 🌍 Route imports
@@ -25,6 +28,7 @@ import jobRoutes from './routes/jobRoutes.js';
 import adminRoutes from "./routes/adminRoutes.js"
 import { healthCheck } from './controllers/healthController.js';
 import referralRoutes from "./routes/referralRoutes.js"
+import messageRoutes from "./routes/messageRoutes.js"
 
 
 
@@ -36,7 +40,6 @@ const allowedOrigins = [
   'https://deft-pasca-0b4ec2.netlify.app'
 ];
 
-//const allowedOrigins = (process.env.ALLOWED_ORIGINS || '').split(',').map(o => o.trim());
 
 app.use(cors({
   origin: function (origin, callback) {
@@ -51,14 +54,6 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// if (process.env.NODE_ENV === 'production') {
-//   Sentry.init({
-//     dsn: process.env.SENTRY_DSN,
-//     tracesSampleRate: 1.0,
-//   });
-//   app.use(Sentry.Handlers.requestHandler());
-//   app.use(Sentry.Handlers.tracingHandler());
-// }
 
 // Middleware
 app.use(express.urlencoded({ extended: true }));
@@ -87,6 +82,7 @@ app.use('/api/jobs', jobRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/admin', adminRoutes);
 app.use("/api/referral", referralRoutes)
+app.use("/api/messages", messageRoutes)
 
 
 app.get('/test-cookies', (req, res) => {
@@ -111,27 +107,52 @@ app.get('/api/health', healthCheck);
 app.use(notFound);
 app.use(errorHandler);
 
-// if (process.env.NODE_ENV === 'production') {
-//   app.use(Sentry.Handlers.errorHandler());
-// }
-// process.on('uncaughtException', (err) => {
-//   logger.error('Uncaught Exception', err);
-//   process.exit(1);
-// });
-// process.on('unhandledRejection', (reason) => {
-//   logger.error('Unhandled Rejection', reason);
-//   process.exit(1);
-// });
-
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-	logger.info("Server is running on http://localhost:" + PORT);
-	connectDB();
+const server = http.createServer(app); // wrap Express
+
+ const io = new Server(server, {
+   cors: {
+     origin: allowedOrigins,
+     credentials: true,
+   },
+ });
+
+ io.on('connection', (socket) => {
+   console.log(`👋 Socket connected: ${socket.id}`);
+
+   // join room
+   socket.on('join-room', (roomId) => socket.join(roomId));
+
+ socket.on('send-message', async ({ room, sender, text }) => {
+  try {
+    const msg = new Message({ room, sender, text, type: 'text' });
+    await msg.save();
+    io.to(room).emit('new-message', msg);
+    //console.log(`Message sent to room ${room}:`, msg); // Debugging log
+  } catch (error) {
+    console.error('Error saving message:', error);
+  }
 });
 
-//  if (process.env.NODE_ENV !== 'test') {
-//   app.listen(PORT, () => console.log(`Server on ${PORT}`));
-//   connectDB();
-//  }
-//  export default app;
+   // image
+   socket.on('upload-image', async ({ room, sender, file }) => {
+     const uploaded = await imagekit.upload({
+       file: Buffer.from(file, 'base64'),
+       fileName: `chat-${Date.now()}.jpg`,
+       folder: 'chat',
+     });
+     const msg = new Message({ room, sender, imageUrl: uploaded.url, type: 'image' });
+     await msg.save();
+     io.to(room).emit('new-message', msg);
+   });
+
+   socket.on('disconnect', () => console.log(`❌ Socket ${socket.id} disconnected`));
+ });
+
+ connectDB();
+
+server.listen(PORT, () => {
+  logger.info("Server is running on http://localhost:" + PORT);
+  
+});
