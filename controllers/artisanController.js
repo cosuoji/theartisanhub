@@ -16,30 +16,16 @@ export const getArtisanDirectory = asyncHandler(async (req, res) => {
     sortBy, minRating, available, onlyApproved, minYears
   } = req.query;
 
-  // Cache key (excludes pagination for better cache hits)
-  const cacheKey = `artisan_dir:${JSON.stringify({
-  skill, location, category, minRating, available, onlyApproved, minYears, sortBy,
-  page, limit  // ← Add these
-})}`;
-
-  // Try cache first
-  const cached = await cacheGet(cacheKey);
-  if (cached) return res.json({ 
-    ...cached,
-    page: parseInt(page),
-    totalPages: Math.ceil(cached.total / limit)
-  });
-
   const filter = { role: 'artisan', isDeleted: false };
 
-  // Filter building (same as before)
+  // Filters
   if (onlyApproved === 'true') filter['artisanProfile.isVerified'] = true;
   if (available) filter['artisanProfile.available'] = available === 'true';
   if (minRating) filter.rating = { $gte: Number(minRating) };
   if (minYears) filter['artisanProfile.yearsOfExperience'] = { $gte: Number(minYears) };
   if (skill) filter['artisanProfile.skills'] = { $in: [new RegExp(skill, 'i')] };
   if (category) filter['artisanProfile.category'] = new RegExp(category, 'i');
-  
+
   if (location) {
     const locDoc = await Location.findOne({ name: new RegExp(`^${location}$`, 'i') });
     if (locDoc) {
@@ -65,16 +51,14 @@ export const getArtisanDirectory = asyncHandler(async (req, res) => {
     User.countDocuments(filter)
   ]);
 
-  const result = {
+  res.json({
     artisans,
     total,
     page: parseInt(page),
     totalPages: Math.ceil(total / limit),
-  };
-
-  await cacheSet(cacheKey, result, 300);
-  res.json(result);
+  });
 });
+
   
 // Get single artisan public profile
 export const getArtisanById = asyncHandler(async (req, res) => {
@@ -161,8 +145,8 @@ export const updateArtisanProfile = asyncHandler(async (req, res) => {
 // ✅ If a new address is provided, try geocoding it
 if (updates.address) {
   try {
-    //await geoQueue.add('geocode', { address: updates.address, userId: user._id });
-    const geo = await geocodeNewAddress(updates.address);
+    await geoQueue.add('geocode', { address: updates.address, userId: user._id });
+    //const geo = await geocodeNewAddress(updates.address);
     user.artisanProfile.coordinates = {
       type: 'Point',
       coordinates: [geo.lng, geo.lat],

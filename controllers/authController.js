@@ -211,8 +211,8 @@ try {
     user.resetPasswordExpires = expires;
     await user.save();
   
-    //await sendResetEmail(user.email, rawToken);
-    await emailQueue.add('reset', { type: 'reset', to: user.email, token: rawToken });
+    await sendResetEmail(user.email, rawToken);
+    //await emailQueue.add('reset', { type: 'reset', to: user.email, token: rawToken });
     
   
     res.status(200).json({ message: "If that email exists, a reset link has been sent." });
