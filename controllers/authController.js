@@ -390,9 +390,7 @@ export const getArtisanStats = asyncHandler(async (req, res) => {
      Review.find({ artisan: userId }),
      User.findById(userId).select('artisanProfile.available'),
    ]);
- 
-   console.log(user, jobCount, reviews)
-   
+    
    const avgRating = reviews.length
      ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
      : 0;
