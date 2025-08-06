@@ -25,28 +25,20 @@ export const storeRefreshToken = async (userId, refreshToken) => {
 };
 
 export const setCookies = (res, accessToken, refreshToken, rememberMe = false) => {
-  const isProduction = process.env.NODE_ENV === 'production';
-  
   const cookieOptions = {
     httpOnly: true,
-    secure: isProduction, // Must be true in production for SameSite=None
-    sameSite: isProduction ? 'None' : 'Lax', // None only works with Secure
+    secure: true,
+    sameSite: 'None',
     path: '/',
-    domain: isProduction ? '.yourdomain.com' : undefined, // Leading dot for subdomains
   };
 
-  // Access Token (shorter lifespan)
   res.cookie('accessToken', accessToken, {
     ...cookieOptions,
     maxAge: rememberMe ? 7 * 24 * 60 * 60 * 1000 : 60 * 60 * 1000,
   });
 
-  // Refresh Token
   res.cookie('refreshToken', refreshToken, {
     ...cookieOptions,
     maxAge: rememberMe ? 30 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000,
   });
-
-  // Additional header for mobile clients
-  res.set('X-Auth-Strategy', 'cookies');
 };
