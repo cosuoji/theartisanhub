@@ -89,74 +89,72 @@ export const signup = async (req, res) => {
 
 
 export const login = asyncHandler(async (req, res) => {
-	try {
-	  const { password } = req.body;
+  try {
+    const { password } = req.body;
     const email = req.body.email.toLowerCase();
     const rememberMe = req.body.rememberMe || false;
+    const userAgent = req.headers['user-agent'] || '';
+    const isMobile = /Mobile|Android|iPhone/i.test(userAgent);
 
-    
-  //     // 1a. Verify reCAPTCHA token with Google
-  // const { data } = await axios.post(
-  //   `https://www.google.com/recaptcha/api/siteverify`,
-  //   null,
-  //   {
-  //     params: {
-  //       secret: process.env.RECAPTCHA_SECRET_KEY,
-  //       response: recaptchaToken,
-  //     },
-  //   }
-  // );
-
-  // if (!data.success || data.score < 0.5) {
-  //   return res.status(400).json({ message: 'reCAPTCHA failed. Please try again.' });
-  // }
-
-	
-	  // 1. Validate input
-	  if (!email || !password) {
-		return res.status(400).json({ message: "Email and password are required" });
-	  }
-  
-	  // 2. Find user
-	  const user = await User.findOne({ email }).select('+password')
-	  if (!user) {
-		return res.status(401).json({ message: "User not found" });
-	  }
-  
-	  // 3. Verify password
-	  const isMatch = await user.comparePassword(password);
-	  if (!isMatch) {
-		return res.status(401).json({ message: "Invalid credentials" });
-	  }
-
-    if (user.isBanned) {
-      return res.status(403).json({ message: 'Your account has been banned' });
+    // 1. Input validation
+    if (!email || !password) {
+      return res.status(400).json({ message: "Email and password are required" });
     }
-  
-	  
-	  // 4. Generate tokens
-    const { accessToken, refreshToken, jti } = generateTokens(user._id, rememberMe);
-	  
-	  // 5. Store refresh token
-	  await storeRefreshToken(user._id, refreshToken);
-	  
-	  // 6. Set cookies
+
+    // 2. User lookup
+    const user = await User.findOne({ email }).select('+password');
+    if (!user) {
+      return res.status(401).json({ message: "Invalid credentials" }); // Security: generic message
+    }
+
+    // 3. Password verification
+    if (!(await user.comparePassword(password))) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    // 4. Account status check
+    if (user.isBanned) {
+      return res.status(403).json({ 
+        message: 'Account restricted. Please contact support.',
+        code: 'ACCOUNT_BANNED'
+      });
+    }
+
+    // 5. Token generation
+    const { accessToken, refreshToken } = generateTokens(user._id, rememberMe);
+    
+    // 6. Token storage
+    await storeRefreshToken(user._id, refreshToken);
     setCookies(res, accessToken, refreshToken, rememberMe);
 
-	  // 7. Return user data (without password)
-	  res.json({
+    // 7. Response preparation
+    const response = {
       user: {
         _id: user._id,
         email: user.email,
         role: user.role,
-      },
+        name: user.name,
+        avatar: user.avatar,
+        isVerified: user.isVerified
+      }
+    };
+
+    // 8. Mobile support
+    if (isMobile) {
+      response.tokens = { accessToken, refreshToken };
+      res.set('X-Auth-Fallback', 'mobile-storage');
+    }
+
+    res.json(response);
+
+  } catch (error) {
+    console.error("Login error:", error);
+    res.status(500).json({ 
+      message: "Authentication service unavailable",
+      code: "AUTH_SERVICE_ERROR"
     });
-  
-	} catch (error) {
-	  console.error("Login error:", error);
-	  res.status(500).json({ message: "Internal server error" });
-	}
-  });
+  }
+});
 
 export const logout = asyncHandler(async (req, res) => {
 	try {
