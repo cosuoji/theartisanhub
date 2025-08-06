@@ -142,6 +142,8 @@ export const login = asyncHandler(async (req, res) => {
 	  
 	  // 6. Set cookies
     setCookies(res, accessToken, refreshToken, rememberMe);
+    console.log("User-Agent:", req.get('User-Agent'));
+
 
 	  // 7. Return user data (without password)
 	  res.json({
@@ -153,6 +155,7 @@ export const login = asyncHandler(async (req, res) => {
     });
   
 	} catch (error) {
+    console.log("User-Agent:", req.get('User-Agent'));
 	  console.error("Login error:", error);
 	  res.status(500).json({ message: "Internal server error" });
 	}
