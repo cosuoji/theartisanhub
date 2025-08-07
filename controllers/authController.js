@@ -152,6 +152,7 @@ export const login = asyncHandler(async (req, res) => {
         email: user.email,
         role: user.role,
       },
+      refreshToken,
     });
   
 	} catch (error) {
@@ -313,8 +314,12 @@ try {
 
   export const refreshToken = asyncHandler(async (req, res) => {
     try {
-      const oldRefreshToken = req.cookies.refreshToken;
-      if (!oldRefreshToken) throw new Error("No refresh token");
+      
+    const oldRefreshToken =
+      req.cookies.refreshToken ||
+      req.headers.authorization?.replace('Bearer ', '');
+
+    if (!oldRefreshToken) throw new Error("No refresh token");
   
       // 1. Verify token
       const decoded = jwt.verify(oldRefreshToken, process.env.JWT_SECRET);
