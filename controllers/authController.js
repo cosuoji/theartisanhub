@@ -142,7 +142,6 @@ export const login = asyncHandler(async (req, res) => {
 	  
 	  // 6. Set cookies
     setCookies(res, accessToken, refreshToken, rememberMe);
-    console.log("User-Agent:", req.get('User-Agent'));
 
 
 	  // 7. Return user data (without password)
