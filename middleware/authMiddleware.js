@@ -1,20 +1,19 @@
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
-import { redis } from "../utils/redis.js"; // Make sure this is correctly imported
+import Blacklist from "../models/Blacklist.js";
 
-// src/middleware/protectRoute.js
 export const protectRoute = async (req, res, next) => {
   try {
-    // 1. Cookie first, then Authorization header
+    // 1️⃣ Get token
     const accessToken =
       req.cookies.accessToken ||
-      req.headers.authorization?.replace('Bearer ', '');
+      req.headers.authorization?.replace("Bearer ", "");
 
     if (!accessToken) {
       return res.status(401).json({ message: "Unauthorized - No access token provided" });
     }
 
-    // 2. Verify it
+    // 2️⃣ Verify token
     let decoded;
     try {
       decoded = jwt.verify(accessToken, process.env.JWT_SECRET);
@@ -25,13 +24,13 @@ export const protectRoute = async (req, res, next) => {
       return res.status(401).json({ message: "Invalid access token" });
     }
 
-    // 3. Black-list check
-    const isBlacklisted = await redis.get(`bl_access:${decoded.jti}`);
+    // 3️⃣ Check if token was blacklisted (user logged out)
+    const isBlacklisted = await Blacklist.findOne({ jti: decoded.jti });
     if (isBlacklisted) {
-      return res.status(401).json({ message: "Token has been blacklisted. Please log in again." });
+      return res.status(401).json({ message: "Token invalidated. Please log in again." });
     }
 
-    // 4. Fetch user
+    // 4️⃣ Fetch user
     const user = await User.findById(decoded.userId).select("-password");
     if (!user) {
       return res.status(401).json({ message: "User not found" });

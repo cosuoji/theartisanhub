@@ -1,6 +1,6 @@
 import express from 'express';
 import { adminRoute, protectRoute } from '../middleware/authMiddleware.js';
-import { generateReferralCode, getReferralStats } from '../utils/referral.js';
+//import { generateReferralCode, getReferralStats } from '../utils/referral.js';
 
 const router = express.Router();
 

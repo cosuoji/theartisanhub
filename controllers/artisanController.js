@@ -1,9 +1,9 @@
 import User from '../models/User.js';
 import asyncHandler from 'express-async-handler';
 import Location from "../models/Location.js"
-//import geocodeNewAddress from '../utils/geocoder.js';
-import { cacheGet, cacheSet, cacheDelPattern } from '../utils/cache.js';
-import { geoQueue } from '../jobs/index.js';
+import geocodeNewAddress from '../utils/geocoder.js';
+//import { cacheGet, cacheSet, cacheDelPattern } from '../utils/cache.js';
+//import { geoQueue } from '../jobs/index.js';
 
 
 
@@ -145,8 +145,8 @@ export const updateArtisanProfile = asyncHandler(async (req, res) => {
 // ✅ If a new address is provided, try geocoding it
 if (updates.address) {
   try {
-    await geoQueue.add('geocode', { address: updates.address, userId: user._id });
-    //const geo = await geocodeNewAddress(updates.address);
+    //await geoQueue.add('geocode', { address: updates.address, userId: user._id });
+    const geo = await geocodeNewAddress(updates.address);
     user.artisanProfile.coordinates = {
       type: 'Point',
       coordinates: [geo.lng, geo.lat],
@@ -182,7 +182,7 @@ if (updates.address) {
   }
 
   await user.save();
-  await cacheDelPattern('artisan_dir:*'); // bust every cached 
+  //await cacheDelPattern('artisan_dir:*'); // bust every cached 
   res.json(user);
 });
 
@@ -271,7 +271,7 @@ export const toggleAvailability = asyncHandler(async (req, res) => {
 
   user.artisanProfile.available = !user.artisanProfile.available;
   await user.save();
-  await cacheDelPattern('artisan_dir:*'); // bust every cached 
+  //await cacheDelPattern('artisan_dir:*'); // bust every cached 
 
   res.json({
     available: user.artisanProfile.available,

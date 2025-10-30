@@ -2,17 +2,18 @@
 import Job from '../models/Job.js';
 import asyncHandler from 'express-async-handler';
 import User from '../models/User.js';
-import { redis } from '../utils/redis.js';
+import Review from '../models/Review.js';
+//import { redis } from '../utils/redis.js';
 
 
 export const createJob = asyncHandler(async (req, res) => {
-  const { artisanId, description} = req.body;
-  const { referrer } = req.body; // e.g. ?ref=ABC123
+  const { artisanId, heading, description} = req.body;
+  //const { referrer } = req.body; // e.g. ?ref=ABC123
 
-  if (referrer) {
-    const referrerId = await redis.get(`referral_code:${referrer}`);
-    if (referrerId) await recordReferral(referrerId, req.user._id);
-  }
+  // if (referrer) {
+  //   const referrerId = await redis.get(`referral_code:${referrer}`);
+  //   if (referrerId) await recordReferral(referrerId, req.user._id);
+  // }
 
 
   const artisan = await User.findById(artisanId);
@@ -28,6 +29,7 @@ export const createJob = asyncHandler(async (req, res) => {
   const job = await Job.create({
     user: req.user._id,
     artisan: artisanId,
+    heading,
     description,
     status: 'pending',
   });
@@ -43,6 +45,7 @@ export const getUserJobs = asyncHandler(async (req, res) => {
   const total = await Job.countDocuments({ user: req.user._id });
   const jobs = await Job.find({ user: req.user._id })
     .populate('artisan', 'name _id') // Important for linking
+    .populate("heading")
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(limit);
@@ -55,15 +58,17 @@ export const getArtisanJobs = asyncHandler(async (req, res) => {
   const limit = Number(req.query.limit) || 10;
   const skip = (page - 1) * limit;
 
-  const total = await Job.countDocuments({ artisan: req.user._id });
-  const jobs = await Job.find({ artisan: req.user._id })
-    .populate('artisan', 'name _id') // Important for linking
-    .sort({ createdAt: -1 })
-    .skip(skip)
-    .limit(limit);
+  const [total, jobs] = await Promise.all([
+    Job.countDocuments({ artisan: req.user._id }),
+    Job.find({ artisan: req.user._id })
+      .populate('artisan', 'name _id') // keep artisan info minimal
+      .populate('user', 'name email phone') // ✅ show client details
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit),
+  ]);
   res.json({ jobs, total });
 });
-
 
 export const markJobCompleted = asyncHandler(async (req, res) => {
   const job = await Job.findById(req.params.jobId);
@@ -189,4 +194,29 @@ export const checkCanReview = asyncHandler(async (req, res) => {
   });
 
   res.json({ canReview: !!job });
+});
+
+// controllers/jobController.js
+export const getJobsEligibleForReview = asyncHandler(async (req, res) => {
+  const jobs = await Job.find({
+    artisan: req.params.artisanId,
+    user: req.user._id,
+    status: "completed",
+  }).select("_id title createdAt heading");
+
+  res.json({ jobs });
+});
+
+// 📥 Get all completed but unreviewed jobs for a specific artisan
+export const getUnreviewedJobs = asyncHandler(async (req, res) => {
+  const { artisanId } = req.params;
+
+  const jobs = await Job.find({
+    user: req.user._id,
+    artisan: artisanId,
+    status: 'completed',
+    _id: { $nin: await Review.distinct('job', { user: req.user._id }) }, // exclude reviewed jobs
+  }).select('heading description _id createdAt');
+
+  res.json({ jobs });
 });

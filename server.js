@@ -111,44 +111,44 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 5000;
 const server = http.createServer(app); // wrap Express
 
- const io = new Server(server, {
-   cors: {
-     origin: allowedOrigins,
-     credentials: true,
-   },
- });
+//  const io = new Server(server, {
+//    cors: {
+//      origin: allowedOrigins,
+//      credentials: true,
+//    },
+//  });
 
- io.on('connection', (socket) => {
-   console.log(`👋 Socket connected: ${socket.id}`);
+//  io.on('connection', (socket) => {
+//    console.log(`👋 Socket connected: ${socket.id}`);
 
-   // join room
-   socket.on('join-room', (roomId) => socket.join(roomId));
+//    // join room
+//    socket.on('join-room', (roomId) => socket.join(roomId));
 
- socket.on('send-message', async ({ room, sender, text }) => {
-  try {
-    const msg = new Message({ room, sender, text, type: 'text' });
-    await msg.save();
-    io.to(room).emit('new-message', msg);
-    //console.log(`Message sent to room ${room}:`, msg); // Debugging log
-  } catch (error) {
-    console.error('Error saving message:', error);
-  }
-});
+//  socket.on('send-message', async ({ room, sender, text }) => {
+//   try {
+//     const msg = new Message({ room, sender, text, type: 'text' });
+//     await msg.save();
+//     io.to(room).emit('new-message', msg);
+//     //console.log(`Message sent to room ${room}:`, msg); // Debugging log
+//   } catch (error) {
+//     console.error('Error saving message:', error);
+//   }
+// });
 
-   // image
-   socket.on('upload-image', async ({ room, sender, file }) => {
-     const uploaded = await imagekit.upload({
-       file: Buffer.from(file, 'base64'),
-       fileName: `chat-${Date.now()}.jpg`,
-       folder: 'chat',
-     });
-     const msg = new Message({ room, sender, imageUrl: uploaded.url, type: 'image' });
-     await msg.save();
-     io.to(room).emit('new-message', msg);
-   });
+//    // image
+//    socket.on('upload-image', async ({ room, sender, file }) => {
+//      const uploaded = await imagekit.upload({
+//        file: Buffer.from(file, 'base64'),
+//        fileName: `chat-${Date.now()}.jpg`,
+//        folder: 'chat',
+//      });
+//      const msg = new Message({ room, sender, imageUrl: uploaded.url, type: 'image' });
+//      await msg.save();
+//      io.to(room).emit('new-message', msg);
+//    });
 
-   socket.on('disconnect', () => console.log(`❌ Socket ${socket.id} disconnected`));
- });
+//    socket.on('disconnect', () => console.log(`❌ Socket ${socket.id} disconnected`));
+//  });
 
  connectDB();
 

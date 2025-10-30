@@ -7,7 +7,7 @@ import Job from '../models/Job.js';
 
 // 🚀 Create a new review
 export const createReview = asyncHandler(async (req, res) => {
-  const { artisanId, rating, comment } = req.body;
+  const { artisanId,jobId, rating, comment } = req.body;
 
   const artisan = await User.findById(artisanId);
   if (!artisan || artisan.role !== 'artisan') {
@@ -20,24 +20,18 @@ export const createReview = asyncHandler(async (req, res) => {
   }
 
   // 🔒 Must verify email
-  if (!req.user.isVerified) {
+  if (!req.user.isEmailVerified) {
     return res.status(403).json({ message: "Please verify your email to leave reviews." });
   }
 
-  if (req.files?.length > 3) return res.status(400).json({ message: 'Max 3 images allowed' });
 
-  const images = req.files?.map(file => file.path) || []; // ImageKit URLs from middleware
-
-  // ✅ Ensure the user has completed a job with the artisan
-  const completedJob = await Job.findOne({
+   // ✅ Ensure job exists and belongs to this user & artisan
+  const job = await Job.findOne({
+    _id: jobId,
     user: req.user._id,
     artisan: artisan._id,
     status: 'completed',
   });
-
-  if (!completedJob) {
-    return res.status(403).json({ message: 'You must complete a job with this artisan to leave a review.' });
-  }
 
   // ✅ Validate input
   if (typeof rating !== 'number' || rating < 1 || rating > 5) {
@@ -51,10 +45,11 @@ export const createReview = asyncHandler(async (req, res) => {
   try {
     const review = await Review.create({
       artisan: artisanId,
+      job: job._id,
       user: req.user._id,
       rating,
       comment,
-      images,
+     
     });
 
   // update average rating
@@ -66,9 +61,9 @@ export const createReview = asyncHandler(async (req, res) => {
 
   } catch (err) {
     if (err.code === 11000) {
-      return res.status(400).json({ message: 'You have already reviewed this artisan.' });
-    }
-    throw err;
+    return res.status(400).json({ message: "You've already reviewed this job." });
+  }
+  throw err;
   }
 });
 
@@ -83,6 +78,7 @@ export const getArtisanReviews = asyncHandler(async (req, res) => {
   const [reviews, total] = await Promise.all([
     Review.find({ artisan: artisanId })
       .populate('user', 'name avatar')
+      .populate('job', 'heading description')
       .sort({createdAt: -1})
       .skip(skip)
       .limit(limit),

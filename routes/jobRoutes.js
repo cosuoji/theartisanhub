@@ -7,8 +7,8 @@ import {
   cancelJob,
   markJobCompleted,
   getAllJobs,
-  checkCanReview,
-  getArtisanJobs
+  getArtisanJobs,
+  getUnreviewedJobs
 } from '../controllers/jobController.js';
 
 import {
@@ -195,7 +195,8 @@ router.patch('/:jobId/complete', protectRoute, artisanOnly, markJobCompleted);
 router.get('/admin/all', protectRoute, adminRoute, getAllJobs);
 
 // routes/jobRoutes.js
-router.get('/can-review/:artisanId', protectRoute, checkCanReview);
+router.get('/unreviewed/:artisanId', protectRoute, getUnreviewedJobs);
+
 
 
 export default router;

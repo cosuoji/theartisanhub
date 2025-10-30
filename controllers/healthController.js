@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { redis } from '../utils/redis.js';
+//import { redis } from '../utils/redis.js';
 import logger from '../utils/logger.js';
 
 export const healthCheck = async (req, res) => {
@@ -8,7 +8,7 @@ export const healthCheck = async (req, res) => {
     await mongoose.connection.db.admin().ping();
 
     // 2. Redis
-    await redis.ping();
+    //await redis.ping();
 
     res.status(200).json({ status: 'ok', services: ['mongo', 'redis'] });
   } catch (err) {

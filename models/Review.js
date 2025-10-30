@@ -18,11 +18,12 @@ const reviewSchema = new mongoose.Schema({
     min: 1,
     max: 5,
   },
+    job: { type: mongoose.Schema.Types.ObjectId, ref: 'Job', required: true },
+
   comment: { type: String },
-  images: [{ type: String }], // URLs from ImageKit
 
 }, { timestamps: true });
 
-reviewSchema.index({ artisan: 1, user: 1 }, { unique: true }); // 1 review per user per artisan
+reviewSchema.index({ user: 1, job: 1 }, { unique: true });
 
 export default mongoose.model('Review', reviewSchema);

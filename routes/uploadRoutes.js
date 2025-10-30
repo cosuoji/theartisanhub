@@ -2,7 +2,6 @@ import express from 'express';
 import { uploadAvatar, uploadArtisanImages, removeArtisanImage } from '../controllers/uploadController.js';
 import { protectRoute, artisanOnly } from '../middleware/authMiddleware.js';
 import { upload } from '../middleware/upload.js';
-import multer from 'multer';
 import rateLimit from 'express-rate-limit';
 
 const uploadLimiter = rateLimit({

@@ -22,6 +22,8 @@ const userSchema = new mongoose.Schema({
   isBanned: { type: Boolean, default: false },
   isDeleted: { type: Boolean, default: false },
   favourites: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  refreshTokens: [{ token: String, createdAt: Date }]
+
 }, { timestamps: true });
 
 // 📦 Indexing for geospatial search
