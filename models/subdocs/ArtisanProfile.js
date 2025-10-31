@@ -33,7 +33,11 @@ availabilitySlots: [{
 
   // ✅ New field
   portfolioImages: [{ type: String }], // store URLs here
+  isCurrentlyFeatured: {type: Boolean, default: false},
+  featuredUntil: { type: Date, default: null }, // null = not currently featured
+
 }, { _id: false });
 
 
 export default artisanProfileSchema;
+

@@ -9,9 +9,11 @@ import { notFound, errorHandler } from './middleware/errorMiddleware.js';
 import cookieParser from 'cookie-parser';
 import logger from './utils/logger.js';
 import http from 'http';
-import { Server } from 'socket.io';
-import Message from './models/Message.js';
-import { imagekit } from './utils/imagekit.js';
+// import { Server } from 'socket.io';
+// import Message from './models/Message.js';
+// import { imagekit } from './utils/imagekit.js';
+
+
 
 
 // 🌍 Route imports
@@ -29,6 +31,7 @@ import adminRoutes from "./routes/adminRoutes.js"
 import { healthCheck } from './controllers/healthController.js';
 import referralRoutes from "./routes/referralRoutes.js"
 import messageRoutes from "./routes/messageRoutes.js"
+import { runInitialFeatureCleanup, scheduleFeatureCleanup } from './cron/featureCleanup.js';
 
 
 
@@ -67,6 +70,9 @@ if (process.env.NODE_ENV === 'development') {
 
 app.use(express.json());
 app.use(cookieParser());
+
+runInitialFeatureCleanup(); // Clean up on startup
+scheduleFeatureCleanup();   // Schedule daily cleanup
 
 // Sample route
 app.get('/', (req, res) => {

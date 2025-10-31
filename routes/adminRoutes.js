@@ -10,6 +10,11 @@ import {
 } from '../controllers/adminController.js';
 import AuditLog from '../models/AuditLog.js';
 import asyncHandler from 'express-async-handler';
+import {
+  featureArtisan,
+  toggleFeatureArtisan,
+  getFeaturedArtisans,
+} from '../controllers/featureController.js';
 
 
 
@@ -197,6 +202,34 @@ router.get('/audit-logs', protectRoute, adminRoute, asyncHandler(async (req, res
     .limit(100);
   res.json(logs);
 }));
+
+
+// 📋 Get all currently featured artisans
+router.get(
+  '/artisans/featured',
+  protectRoute,
+  adminRoute,
+  getFeaturedArtisans
+);
+
+
+
+// 🌟 Feature an artisan for a set duration (7d, 30d, etc.)
+router.patch(
+  '/artisans/:id/feature',
+  protectRoute,
+  adminRoute,
+  featureArtisan
+);
+
+// 🔁 Toggle featured status manually
+router.patch(
+  '/artisans/:id/toggle-feature',
+  protectRoute,
+  adminRoute,
+  toggleFeatureArtisan
+);
+
 
 
 export default router;
