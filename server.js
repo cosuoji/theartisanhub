@@ -32,6 +32,8 @@ import { healthCheck } from './controllers/healthController.js';
 import referralRoutes from "./routes/referralRoutes.js"
 import messageRoutes from "./routes/messageRoutes.js"
 import { runInitialFeatureCleanup, scheduleFeatureCleanup } from './cron/featureCleanup.js';
+import kycRoutes from './routes/kycRoutes.js';
+
 
 
 
@@ -40,7 +42,8 @@ dotenv.config();
 const app = express();
 const allowedOrigins = [
   'http://localhost:5173',
-  'https://deft-pasca-0b4ec2.netlify.app'
+  'https://deft-pasca-0b4ec2.netlify.app',
+  'https://abegfix.com'
 ];
 
 
@@ -89,6 +92,7 @@ app.use('/api/reviews', reviewRoutes);
 app.use('/api/admin', adminRoutes);
 app.use("/api/referral", referralRoutes)
 app.use("/api/messages", messageRoutes)
+app.use('/api/kyc', kycRoutes);
 
 
 app.get('/test-cookies', (req, res) => {

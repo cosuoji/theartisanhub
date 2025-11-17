@@ -83,7 +83,7 @@ export const getArtisanById = asyncHandler(async (req, res) => {
           <meta charset="UTF-8" />
           <meta property="og:title" content="${artisan.name}" />
           <meta property="og:description" content="${
-            artisan.artisanProfile?.bio || 'Artisan on ArtisanHub'
+            artisan.artisanProfile?.bio || 'Artisan on Abeg Fix'
           }" />
           <meta property="og:image" content="${artisan.avatar}" />
           <meta property="og:url" content="${
