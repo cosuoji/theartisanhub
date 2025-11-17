@@ -206,7 +206,7 @@ router.get('/verify-email/:token', verifyEmail);
  *       400:
  *         description: Already verified or user not found
  */
-router.post('/resend-verification', resendVerificationLimiter, resendVerificationEmail);
+router.post('/resend-verification', resendVerificationEmail);
 
 /**
  * @swagger
@@ -286,3 +286,5 @@ router.get("/profile", protectRoute, getFullProfile)
 router.patch('/change-password', protectRoute, changePassword);
 
 export default router;
+
+//resendVerificationLimiter,

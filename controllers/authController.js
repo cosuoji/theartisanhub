@@ -293,10 +293,9 @@ try {
 
   export const resendVerificationEmail = async (req, res) => {
     const { email } = req.body;
-  
+    
     try {
       const user = await User.findOne({ email });
-  
       if (!user) {
         return res.status(400).json({ message: 'No account found with that email.' });
       }
